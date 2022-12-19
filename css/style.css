@@ -1,0 +1,191 @@
+/*
+ * Red Pitaya Relocking ECDL Application
+ *
+ * Author: Mehrdad Zarei <mzarei@umk.pl>
+ * Date: 2022.06.21
+ *
+ * (c) Red Pitaya  http://www.redpitaya.com
+ */
+
+ 
+body {
+    background-color: white;
+    color: black;
+    overflow: auto;
+    min-width: 250px;
+    padding-right: 0 !important;
+}
+
+.dark-mode {
+    background-color: #343433;
+    color: #cdcccc;
+}
+
+#header {
+    background-color: black;
+    color: #CCC;
+    text-align: center;
+    padding: 6px;
+    overflow: hidden;
+    height: 30px;
+    width: 100%;
+    white-space: nowrap;
+}
+
+#connection_meter {
+    right: 100px;
+    width: 100px;
+    float: right;
+    text-align: left;
+}
+
+#throughput_view2 {
+    text-align: right;
+    width: 150px;
+}
+
+#mode {
+    right: 10px;
+    width: 100px;
+    float: right;
+    text-align: right;
+}
+
+.full-content {
+    /* min-width: 1024px; */
+    margin: 0 auto;
+    position: relative;
+}
+
+.container-fluid {
+    margin-top: 1px;
+}
+
+.navbar {
+    border-radius: 10px;
+    background-color: #343433;
+    background-image: linear-gradient(to bottom, #343433 0, #343433 100%);
+    border: 1px solid #999;
+    min-height: 45px;
+    border-left: 1px solid #999;
+}
+
+.navbar-inverse .nav>li>a {
+    color: #cdcccc;
+    outline: none;
+}
+
+.container {
+    width: 100%;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.navbar-collapse {
+    padding-left: 0px;
+    padding-right: 0px;
+    float: right;
+}
+
+.navbar-collapse collapse in {
+    width: 100%;
+    overflow: hidden;
+}
+
+.navbar-brand {
+    height: 40px;
+}
+
+.back-btn {
+    height: 22px;
+    float: left;
+    margin: -3px 0px 0px 11px;
+}
+
+.logo {
+    margin: 5px 0px 0px 15px;
+    float: left;
+}
+
+.nav-name {
+    float: left;
+    margin: 5px 0px 0px 50px;
+    /* text-align: center; */
+    color: darkorange;
+}
+
+.nav>li>a {
+    position: relative;
+    display: block;
+    padding: 13px 30px;
+    height: 45px;
+    border-left: 1px solid #999;
+}
+
+.nav>li>a:hover {
+    background-color: #444 !important;
+    color: #E5D5D5;
+}
+
+.nav li {
+    width: 142px;
+    text-align: center;
+}
+
+#APP_RUN,
+#APP_RUN:hover {
+    color: #31b44b;
+}
+
+#APP_STOP,
+#APP_STOP:hover {
+    display: none;
+    color: #ee3739;
+}
+
+#graphs_holder {
+    margin-right: 5px;
+    padding-top: 0px;
+    overflow: hidden;
+}
+
+#graphs {
+    width: 100%;
+    padding-right: 0px;
+    position: relative;
+    overflow: hidden;
+}
+
+#graph_grid {
+    border: 1px solid #5d5d5c;
+    margin-bottom: 2px;
+}
+
+#spec_graph {
+    width: 100%;
+    padding-right: 0px;
+    position: relative;
+    overflow: hidden;
+}
+
+#spec_graph_grid {
+    border: 1px solid #5d5d5c;
+    margin-bottom: 2px;
+}
+
+.plot {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.panel-body {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.panel-body .row {
+    margin-bottom: 10px;
+}
+
+

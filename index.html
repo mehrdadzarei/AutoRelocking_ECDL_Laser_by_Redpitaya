@@ -1,0 +1,332 @@
+<!-- 
+ *
+ * Red Pitaya Relocking ECDL Application
+ *
+ * Author: Mehrdad Zarei <mzarei@umk.pl>
+ * Date: 2022.06.21
+ *
+ * (c) Red Pitaya  http://www.redpitaya.com
+ *
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"></meta>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="cache-control" content="max-age=0" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <title>Relocking ECDL</title>
+    <link rel="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css" onerror="location.reload()" />
+    <link rel="stylesheet" href="../assets/loader.css" type="text/css" onerror="location.reload()" />
+    <link rel="stylesheet" href="../assets/lpulse.css" type="text/css" onerror="location.reload()" />
+    <link rel="stylesheet" href="../assets/usermis.css" type="text/css" onerror="location.reload()" />
+    <link rel="stylesheet" href="css/style.css" onerror="location.reload()" />
+    <script src="../assets/jquery/jquery-2.1.3.min.js" onerror="location.reload()"></script>
+    <script src="../assets/jquery/jquery.flot.js" onerror="location.reload()"></script>
+    <script src="../assets/jquery/jquery.cookie.js?1" onerror="location.reload()"></script>
+    <script src="../assets/bootstrap/js/bootstrap.min.js" onerror="location.reload()"></script>   <!-- this line have to be after jquery-->
+    <script src="../assets/pako.js?1" onerror="location.reload()"></script>
+    <script src="js/app.js" onerror="location.reload()"></script>
+</head>
+
+<body class="user_lost connection_lost">
+   	
+    <div id="user-wrapper">
+        <div id="user"></div>
+        <div id="user-desc">Device is already in use by another user.</div>
+    </div>
+
+    <div id="pulse-wrapper">
+        <div id="pulse"></div>
+        <div id="pulse-desc">Connection with device is lost.</div>
+    </div>
+    
+    <div id="loader-wrapper">
+        <div id="loader"></div>
+    </div>
+
+    <div id="header">
+        <div>
+            <span id="mode", class="glyphicon glyphicon-adjust"></span>
+        </div>
+        <div id="connection_meter" title="It seems like your connection is ok">
+            <img id="connection_icon" src="../assets/images/good_net.png" width="20px">
+            <span id="throughput_view2">0 kB/s</span>
+        </div>
+    </div>
+
+    <div class="full-content">
+   		<div class="container-fluid">
+
+            <div class="navbar navbar-inverse", role="navigation">
+                <div class="container">
+
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                            <span class="sr-only">T</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a class="navbar-brand", href="/">
+                            <img class="back-btn", src="../assets/images/navigation_arrow_left.png">
+                        </a>
+                        <img class="logo", width="110", src="../assets/images/navigation_logo.png">
+                        <h1 class="nav-name">Auto Relocking ECDL</h1>
+                    </div>
+
+                    <div class="collapse navbar-collapse">
+                        <ul class="nav navbar-nav">
+                            <li>
+                                <a id="AUTO_SCALE" href="#">Auto Scale</a>
+                            </li>
+                            <li>
+                                <a id="auto_lock" href="#" style="">Auto Lock</a>
+                                <a id="man_lock" href="#" style="display:none;">Manual Lock</a>
+                            </li>
+                            <li>
+                                <a id="APP_RUN" href="#" style="">RUN</a>
+                                <a id="APP_STOP" href="#" style="display:none;">STOP</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="global_container" style="position: relative;">
+                <div class="row">
+                    
+                    <!-- if you want to keep open one of the panel group write 
+                    "collapse in" in that specific panel insteed of only "collapse" -->
+                    <div id="accordion" class="panel-group col-xs-12 col-sm-3 col-md-3 col-lg-3">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#pltSett">
+                                        Plot Settings
+                                    </a>
+                                </h4>
+                            </div>
+                            <!-- <div id="pltSett" class="panel-collapse collapse in"> -->
+                            <div id="pltSett" class="panel-collapse collapse">
+                                <div class="panel-body" style="color: black;">
+                                    <div class="row">
+                                        <button id="CH1_IN_SHOW" class="btn btn-primary" data-checked="true">Channel 1</button>
+                                        <button id="CH2_IN_SHOW" class="btn btn-primary" data-checked="true">Channel 2</button>
+                                    </div>
+                                    <div class="row">
+                                        <label for="x_zoompan">X Range</label>
+                                        <div id="x_zoompan" class="btn-group">
+                                            <button id="x_zoomin" class="btn btn-primary">
+                                                <span class="glyphicon glyphicon-zoom-in"></span>
+                                            </button>
+                                            <button id="x_zoomout" class="btn btn-primary">
+                                                <span class="glyphicon glyphicon-zoom-out"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <label for="y_zoompan">Y Range</label>
+                                        <div id="y_zoompan" class="btn-group">
+                                            <button id="y_zoomin" class="btn btn-primary">
+                                                <span class="glyphicon glyphicon-zoom-in"></span>
+                                            </button>
+                                            <button id="y_zoomout" class="btn btn-primary">
+                                                <span class="glyphicon glyphicon-zoom-out"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <label>Channel 1 Gain</label>
+                                    </div>
+                                    <div class="row">
+                                        <label>Probe Attenuation: </label>
+                                        <select id="CH1_IN_PROBE">
+                                            <option value="0">1x</option>
+                                            <option value="1">10x</option>
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <label>Gain Level: </label>
+                                        <select id="CH1_IN_GAIN">
+                                            <option value="0">LV</option>
+                                            <option value="1">HV</option>
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <label>Channel 2 Gain</label>
+                                    </div>
+                                    <div class="row">
+                                        <label>Probe Attenuation: </label>
+                                        <select id="CH2_IN_PROBE">
+                                            <option value="0">1x</option>
+                                            <option value="1">10x</option>
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <label>Gain Level: </label>
+                                        <select id="CH2_IN_GAIN">
+                                            <option value="0">LV</option>
+                                            <option value="1">HV</option>
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <label>Output 1 Gain</label>
+                                    </div>
+                                    <div class="row">
+                                        <label for="ch1_out_max">Max: </label>
+                                        <input id="ch1_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <label for="ch1_out_min">Min: </label>
+                                        <input id="ch1_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <label>Output 2 Gain</label>
+                                    </div>
+                                    <div class="row">
+                                        <label for="ch2_out_max">Max: </label>
+                                        <input id="ch2_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <label for="ch2_out_min">Min: </label>
+                                        <input id="ch2_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#lockSett">
+                                        Lock Settings
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="lockSett" class="panel-collapse collapse">
+                                <div class="panel-body" style="color: black;">
+                                    <div class="row">
+                                        <input id="cavity_lock" type="checkbox">
+                                        <label for="cavity_lock"> Locking by Cavity</label>
+                                    </div>
+                                    <div class="row">
+                                        <input id="wlm_lock" type="checkbox">
+                                        <label for="wlm_lock"> Locking by Wavemeter</label>
+                                    </div>
+                                    <div class="row">
+                                        <input id="piezo_lock" type="checkbox">
+                                        <label for="piezo_lock"> Feedback to the Piezo</label>
+                                    </div>
+                                    <div class="row">
+                                        <input id="curr_lock" type="checkbox">
+                                        <label for="curr_lock"> Feedback to the Current</label>
+                                    </div>
+                                    <div class="row">
+                                        <label for="tran_lvl">Transmission Level: </label>
+                                        <input id="tran_lvl" style="width: 80px;" type="number" min="-20" max="20" step="0.001" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#lsCrl">
+                                        Laser Control
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="lsCrl" class="panel-collapse collapse">
+                                <div class="panel-body" style="color: black;">
+                                    <div class="row">
+                                        <label for="piezoN">Piezo Controller: </label>
+                                        <input id="piezoN" style="width: 80px;" type="number" min="-1" max="1" step="0.001" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <input id="piezo" type="range" min="-1" max="1" step="0.001" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <label for="currN">Current Controller: </label>
+                                        <input id="currN" style="width: 80px;" type="number" min="-1" max="1" step="0.001" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <input id="curr" type="range" min="-1" max="1" step="0.001" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#wlm">
+                                        Wavemeter
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="wlm" class="panel-collapse collapse">
+                                <div class="panel-body" style="color: black;">
+                                    <div class="row">
+                                        <label>Channel: </label>
+                                        <select id="WLM_CH" style="width: 50px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <label for="target">Target [THz]: </label>
+                                        <input id="target" style="width: 105px;" type="number" step="0.00001" value="473.88010">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="main" class="col-xs-12 col-sm-9 col-md-9 col-lg-9">
+                        <div id="graphs_holder">
+                            <!-- <div id="ytitle">Voltage [ V ]</div> -->
+                            <div id="graphs">
+                                <canvas id="graph_grid"></canvas>
+                            </div>
+                            <!-- <div id="xtitle">Time [ ms ]</div> -->
+                            <div id="spec_graph">
+                                <canvas id="spec_graph_grid"></canvas>
+                            </div>
+                        </div>
+                        <div id="info">
+                            <div id="wlm_info" class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+                                <h1 id="wlm_msg" style="display:none; color: rgb(189, 79, 79);">Wavemeter is not Connected! </h1>
+                                <h1 id="wavel">Wavelength [nm]: </h1>
+                                <h1 id="freq">Frequency [THz]: </h1>
+                                <h1 id="targ_freq">Target [THz]: &emsp;&ensp;&nbsp;</h1>
+                            </div>
+                            <div id="graph_info" class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+                                <h1 id="graph_msg" style="display:none; color: rgb(189, 79, 79);">
+                                    There is No Mode in the range of Scan! <br/> 
+                                    Optimize parameters... </h1>
+                                <h1 id="mean_ch1">Mean Ch1 [V]: </h1>
+                                <h1 id="mean_ch2">Mean Ch2 [V]: </h1>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+   	</div>
+
+</body>
+</html>

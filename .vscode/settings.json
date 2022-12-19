@@ -1,0 +1,9 @@
+{
+    "terminal.integrated.shellArgs.windows": [
+        "activate",
+        "--confirm-exit-on-error",
+        "--non-interactive",
+        "--output=simple"
+    ],
+    "terminal.integrated.shell.windows": "state"
+}
