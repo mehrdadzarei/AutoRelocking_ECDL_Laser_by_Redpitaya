@@ -64,6 +64,7 @@ int tDelay = 1000000;   // delay us to start acquiring fresh data
 
 float transmision = 0;
 float trans_lev = 0.0;
+int lev = 0;                    // number of out of lock
 float piezo_step = 0.001;       // v, for Redpitaya 10 bit reseloution is 2 mv
 float output_amp1 = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
 float output_shift1 = 0;         // by default is zero
@@ -592,6 +593,7 @@ void *piezo_scan_thread(void *args) {
     }
 
     scan_thread_running = false;
+    lev = 0;
     pthread_exit(NULL);
 }
 
@@ -599,27 +601,25 @@ void locking() {
 
     if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
             
-            if(((transmision < trans_lev && CAV_LOCK.Value()) || 
-                (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
-                !scan_thread_running) {
-        
-                lev++;
-                if(lev > 100 || freq_diff > std_freq_diff) {
-
-                    pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
-                    lev = 0;
-                }
-            } else {
+        if(((transmision < trans_lev && CAV_LOCK.Value()) || 
+            (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
+            !scan_thread_running) {
+    
+            lev++;
+            if(lev > 100 || freq_diff > std_freq_diff) {
+                pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
                 lev = 0;
             }
+        } else {
+            lev = 0;
         }
+    }
 }
 
 void analyseData(int mul, int ch) {
 
     float *n_b = (float *)malloc(buff_size * sizeof(float));
     float sum = 0;
-    int lev = 0;
     const int no_avr = 500;
 
     if(ch == 1) {
@@ -627,8 +627,7 @@ void analyseData(int mul, int ch) {
     } else {
         memcpy(n_b, buff2, buff_size);
     }
-    
-    
+ 
     for(int i = no_avr ; i < buff_size - no_avr ; i++ ){
         
         sum = 0;
@@ -644,7 +643,7 @@ void analyseData(int mul, int ch) {
         transmision = n_b[i - no_avr] * mul;
         if(ch == 1 && CH1_IN_SHOW.Value()) {
             MEAN_CH1.Set(transmision);
-        } elif(ch == 2) {
+        } else if(ch == 2) {
             MEAN_CH2.Set(transmision);
             continue;                   // this channel is not for locking
         }
