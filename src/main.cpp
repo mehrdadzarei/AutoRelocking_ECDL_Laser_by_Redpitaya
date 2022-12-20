@@ -30,7 +30,8 @@
 "the function is not declared in your scope"
 we have to define the function before specific function or declared here
 */ 
-void send_out_gen(float val);
+void send_out_gen1(float val);
+void send_out_gen2(float val);
 
 #define SIGNAL_SIZE_DEFAULT      1024
 #define SIGNAL_UPDATE_INTERVAL      1   // ms
@@ -62,11 +63,15 @@ rp_acq_decimation_t dec = RP_DEC_8192;
 int tDelay = 1000000;   // delay us to start acquiring fresh data
 
 float transmision = 0;
-float scan_lev = 0.0;
+float trans_lev = 0.0;
 float piezo_step = 0.001;       // v, for Redpitaya 10 bit reseloution is 2 mv
-float output_amp = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
-float output_shift = 0;         // by default is zero
+float output_amp1 = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
+float output_shift1 = 0;         // by default is zero
 float piezo_last_value = 0;
+float cur_step = 0.001;       // v, for Redpitaya 10 bit reseloution is 2 mv
+float output_amp2 = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
+float output_shift2 = 0;         // by default is zero
+float cur_last_value = 0;
 int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new value for piezo
 float trg_freq = 0;
 float freq_diff = 0;
@@ -98,6 +103,8 @@ CFloatParameter CH2_OUT_MIN("CH2_OUT_MIN", CBaseParameter::RW, 0, 0, -20, 20);
 
 CBooleanParameter CAV_LOCK("CAV_LOCK", CBaseParameter::RW, false, 0);
 CBooleanParameter WLM_LOCK("WLM_LOCK", CBaseParameter::RW, false, 0);
+CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
+CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
 CFloatParameter TRANS_LVL("TRANS_LVL", CBaseParameter::RW, 0, 0, -20, 20);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -111,6 +118,7 @@ CFloatParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 10000);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
+CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
 
 
 
@@ -338,7 +346,7 @@ void *wavemeter_thread(void *args) {
             continue;
         }
         
-        if(WLM_CON.Value() && WLM_LOCK.Value()) {
+        if(WLM_LOCK.Value()) {
             
             diff = fabs(trg_freq - FREQUENCY.Value());
             if(diff < 50) {
@@ -401,7 +409,7 @@ int scanning(float per = 0.2) {
 
     for(int i = 0; i < len_scan; i++) {
 
-        if(((transmision > scan_lev && CAV_LOCK.Value()) || 
+        if(((transmision > trans_lev && CAV_LOCK.Value()) || 
             (freq_diff < std_freq_diff && WLM_LOCK.Value())) || 
             !scan_thread_running) {
 
@@ -414,10 +422,10 @@ int scanning(float per = 0.2) {
             
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
-                if(transmision > scan_lev && freq_diff < std_freq_diff){
+                if(transmision > trans_lev && freq_diff < std_freq_diff){
                     break;
                 }
-            } else if (transmision > scan_lev && CAV_LOCK.Value()) {
+            } else if (transmision > trans_lev && CAV_LOCK.Value()) {
                 break;
             } else if (freq_diff < std_freq_diff && WLM_LOCK.Value()) {
                 break;
@@ -476,7 +484,7 @@ int scanning(float per = 0.2) {
             }
         }
 
-        send_out_gen(curr_val);
+        send_out_gen1(curr_val);
         CH1_OUT_OFFSET.Set(curr_val);
         usleep(piezo_delay);
     }
@@ -499,7 +507,7 @@ void *piezo_scan_thread(void *args) {
     // scanning whole range of piezo
     while (repeat) {
             
-        if(((transmision > scan_lev && CAV_LOCK.Value()) || 
+        if(((transmision > trans_lev && CAV_LOCK.Value()) || 
             (freq_diff < std_freq_diff && WLM_LOCK.Value())) || 
             !scan_thread_running) {
 
@@ -509,17 +517,17 @@ void *piezo_scan_thread(void *args) {
             
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
-                if(transmision > scan_lev && freq_diff < std_freq_diff){
+                if(transmision > trans_lev && freq_diff < std_freq_diff){
                     break;
                 }
-            } else if (transmision > scan_lev && CAV_LOCK.Value()) {
+            } else if (transmision > trans_lev && CAV_LOCK.Value()) {
                 break;
             } else if (freq_diff < std_freq_diff && WLM_LOCK.Value()) {
                 break;
             }
         }
         
-        // if is not able to find the Mode stop searching
+        // if is not able to find the Mode, stop searching
         if(no_scan == max_no_scan) {
 
             repeat = 0;
@@ -533,22 +541,22 @@ void *piezo_scan_thread(void *args) {
             if(freq_diff < std_freq_diff) {                 // very good condition
 
                 piezo_delay = 10000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
             } else if(freq_diff < std_freq_diff * 2) {      // good condition
 
                 piezo_delay = 9000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
             } else if(freq_diff < std_freq_diff * 3) {      // bad condition
 
                 piezo_delay = 7000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
             } else {                                        // very bad condition
 
                 piezo_delay = 5000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(2.0);
                 no_scan += 1;
             }
@@ -557,25 +565,25 @@ void *piezo_scan_thread(void *args) {
             if(rng_scan == 1) {
                 
                 piezo_delay = 15000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
                 rng_scan = 2;
             } else if (rng_scan == 2) {
                 
                 piezo_delay = 15000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
                 rng_scan = 3;
             } else if (rng_scan == 3) {
                 
                 piezo_delay = 15000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
                 rng_scan = 4;
             } else {
                 
                 piezo_delay = 15000;     // us
-                piezo_step = 1 * piezo_step * output_amp;
+                piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(rng_scan);
                 rng_scan = 1;
                 no_scan += 1;
@@ -587,32 +595,48 @@ void *piezo_scan_thread(void *args) {
     pthread_exit(NULL);
 }
 
-void analyseData(int mul1) {
+void analyseData(int mul, int ch) {
 
     float *n_b = (float *)malloc(buff_size * sizeof(float));
     float sum = 0;
     int lev = 0;
     const int no_avr = 500;
-    memcpy(n_b, buff1, buff_size);
+
+    if(ch == 1) {
+        memcpy(n_b, buff1, buff_size);
+    } else {
+        memcpy(n_b, buff2, buff_size);
+    }
+    
     
     for(int i = no_avr ; i < buff_size - no_avr ; i++ ){
         
         sum = 0;
         for (int j = -no_avr ; j < no_avr ; j++ ){
-            sum += buff1[i + j];
+            if(ch == 1) {
+                sum += buff1[i + j];
+            } else {
+                sum += buff2[i + j];
+            }
         }
         
         n_b[i - no_avr] = sum / (no_avr * 2);
-        transmision = n_b[i - no_avr] * mul1;
-        MEAN_CH1.Set(transmision);
-        // if is not able to find the Mode but there is Mode keep this true
-        if(transmision > scan_lev) {
+        transmision = n_b[i - no_avr] * mul;
+        if(ch == 1) {
+            MEAN_CH1.Set(transmision);
+        } else {
+            MEAN_CH2.Set(transmision);
+            continue;                   // this channel is not for locking
+        }
+        
+        // if is not able to find the Mode but there is Mode, keep this true
+        if(transmision > trans_lev) {
             LOCK_STATE.Set(true);
         }
         
         if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
             
-            if(((transmision < scan_lev && CAV_LOCK.Value()) || 
+            if(((transmision < trans_lev && CAV_LOCK.Value()) || 
                 (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
                 !scan_thread_running) {
         
@@ -638,19 +662,22 @@ void set_generator_config()
     // rp_GenFreq(RP_CH_1, 20000);
 
     //Set offset
-    send_out_gen(CH1_OUT_OFFSET.Value());
+    send_out_gen1(CH1_OUT_OFFSET.Value());
+    send_out_gen2(CH2_OUT_OFFSET.Value());
 
     //Set amplitude
     rp_GenAmp(RP_CH_1, 0);
+    rp_GenAmp(RP_CH_2, 0);
 
     //Set waveform
     rp_GenWaveform(RP_CH_1, RP_WAVEFORM_DC);
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_DC);
 }
 
-// apply value on output generator
-void send_out_gen(float val) {
+// apply value on output generator 1
+void send_out_gen1(float val) {
     
-    float final_val = (val - output_shift) / output_amp;
+    float final_val = (val - output_shift1) / output_amp1;
     
     if(final_val > 1) {
         final_val = 1;
@@ -659,6 +686,20 @@ void send_out_gen(float val) {
     }
 
     rp_GenOffset(RP_CH_1, final_val);
+}
+
+// apply value on output generator 2
+void send_out_gen2(float val) {
+    
+    float final_val = (val - output_shift2) / output_amp2;
+    
+    if(final_val > 1) {
+        final_val = 1;
+    }else if(final_val < -1) {
+        final_val = -1;
+    }
+
+    rp_GenOffset(RP_CH_2, final_val);
 }
 
 // get decimation
@@ -727,6 +768,7 @@ void run_app() {
     rp_GenReset();
     set_generator_config();
     rp_GenOutEnable(RP_CH_1);
+    rp_GenOutEnable(RP_CH_2);
 
     // Init acquire signal
     get_decimation();
@@ -749,6 +791,7 @@ void stop_app() {
 
     // Disabe generator
     rp_GenOutDisable(RP_CH_1);
+    rp_GenOutDisable(RP_CH_2);
 
     // closing the connected socket
     // shutdown(sock, SHUT_RDWR);
@@ -800,6 +843,7 @@ int rp_app_exit(void)
 
     // Disabe generator
     rp_GenOutDisable(RP_CH_1);
+    rp_GenOutDisable(RP_CH_2);
 
     // stop threads
     pthread_exit(NULL);
@@ -850,11 +894,12 @@ void UpdateSignals(void)
 
         if(CH1_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff1);
+            analyseData(mul1, 1);
         }
         if(CH2_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
+            analyseData(mul2, 2);
         }
-        analyseData(mul1);
     }
     
     // int cap_s = floor((TIME_SCALE.Value() / 100) * ADC_SAMPLE_RATE / dec);
@@ -892,13 +937,17 @@ void OnNewParams(void)
     bool ch2_gain = CH2_IN_GAIN.Value();
     float ch1_out_max = CH1_OUT_MAX.Value();
     float ch1_out_min = CH1_OUT_MIN.Value();
+    float ch2_out_max = CH2_OUT_MAX.Value();
+    float ch2_out_min = CH2_OUT_MIN.Value();
     float ch1_offset = CH1_OUT_OFFSET.Value();
+    float ch2_offset = CH2_OUT_OFFSET.Value();
     int prev_ch = WLM_CH.Value();
     bool auto_lock_prev = AUTO_LOCK.Value();
     
     APP_RUN.Update();
     AUTO_LOCK.Update();
     AUTO_SCALE.Update();
+
     TIME_SCALE.Update();
     VOLT_SCALE.Update();
     CH1_IN_SHOW.Update();
@@ -911,11 +960,16 @@ void OnNewParams(void)
     CH1_OUT_MIN.Update();
     CH2_OUT_MAX.Update();
     CH2_OUT_MIN.Update();
+    
     CAV_LOCK.Update();
     WLM_LOCK.Update();
+    PIEZO_FEED.Update();
+    CUR_FEED.Update();
     TRANS_LVL.Update();
+    
     CH1_OUT_OFFSET.Update();
     CH2_OUT_OFFSET.Update();
+    
     WLM_CH.Update();
     TARGET_FREQUENCY.Update();
 
@@ -960,25 +1014,43 @@ void OnNewParams(void)
         }
     }
 
-    // calculate output amplification
+    // calculate output amplification 1
     if(ch1_out_max != CH1_OUT_MAX.Value() || ch1_out_min != CH1_OUT_MIN.Value()) {
         
         if(CH1_OUT_MAX.Value() <= CH1_OUT_MIN.Value()) {
             CH1_OUT_MAX.Set(1);
             CH1_OUT_MIN.Set(-1);
         }
-        output_amp = (CH1_OUT_MAX.Value() - CH1_OUT_MIN.Value())/2;
-        output_shift = (CH1_OUT_MAX.Value() + CH1_OUT_MIN.Value())/2;
-        piezo_step *= output_amp;
+        output_amp1 = (CH1_OUT_MAX.Value() - CH1_OUT_MIN.Value())/2;
+        output_shift1 = (CH1_OUT_MAX.Value() + CH1_OUT_MIN.Value())/2;
+        piezo_step *= output_amp1;
+    }
+
+    // calculate output amplification 2
+    if(ch2_out_max != CH2_OUT_MAX.Value() || ch2_out_min != CH2_OUT_MIN.Value()) {
+        
+        if(CH2_OUT_MAX.Value() <= CH2_OUT_MIN.Value()) {
+            CH2_OUT_MAX.Set(1);
+            CH2_OUT_MIN.Set(-1);
+        }
+        output_amp2 = (CH2_OUT_MAX.Value() - CH2_OUT_MIN.Value())/2;
+        output_shift2 = (CH2_OUT_MAX.Value() + CH2_OUT_MIN.Value())/2;
+        cur_step *= output_amp2;
     }
     
     // set transmission level
-    scan_lev = TRANS_LVL.Value();
+    trans_lev = TRANS_LVL.Value();
 
     // apply manually new value for piezo
     if(ch1_offset != CH1_OUT_OFFSET.Value() && appState && !scan_thread_running) {
-        send_out_gen(CH1_OUT_OFFSET.Value());
+        send_out_gen1(CH1_OUT_OFFSET.Value());
         piezo_last_value = CH1_OUT_OFFSET.Value();
+    }
+
+    // apply manually new value for current
+    if(ch2_offset != CH2_OUT_OFFSET.Value() && appState && !scan_thread_running) {
+        send_out_gen2(CH2_OUT_OFFSET.Value());
+        cur_last_value = CH2_OUT_OFFSET.Value();
     }
 
     trg_freq = TARGET_FREQUENCY.Value();

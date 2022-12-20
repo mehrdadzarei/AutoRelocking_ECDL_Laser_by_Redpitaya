@@ -383,7 +383,7 @@
         }
         var mean_ch1_val = new_params['MEAN_CH1'].value;
         if('MEAN_CH1' in new_params && mean_ch1_val != undefined) {
-            mean_ch1_txt.innerHTML = "Mean Ch1 [V]: ".concat(" ", mean_ch1_val.toFixed(3));
+            mean_ch1_txt.innerHTML = "Mean In1 [V]: ".concat(" ", mean_ch1_val.toFixed(3));
         }
     };
 
@@ -759,19 +759,6 @@
                 APP.params.orig['AUTO_LOCK'] = { value: false };
             }
         }
-
-        if($.cookie('CAV_LOCK') === undefined) {
-            $("#cavity_lock").attr("checked", false);
-            APP.params.local['CAV_LOCK'] = { value: false };
-        } else {
-            if($.cookie('CAV_LOCK') == 'true') {
-                $("#cavity_lock").attr("checked", true);
-                APP.params.local['CAV_LOCK'] = { value: true };
-            }else {
-                $("#cavity_lock").attr("checked", false);
-                APP.params.local['CAV_LOCK'] = { value: false };
-            }
-        }
         
         if($.cookie('CH1_IN_SHOW') !== "true") {
             $("#CH1_IN_SHOW").data('checked', false).toggleClass('btn-default btn-primary');
@@ -895,6 +882,19 @@
             curN.value = $.cookie('CH2_OUT_OFFSET');
         }
 
+        if($.cookie('CAV_LOCK') === undefined) {
+            $("#cavity_lock").attr("checked", false);
+            APP.params.local['CAV_LOCK'] = { value: false };
+        } else {
+            if($.cookie('CAV_LOCK') == 'true') {
+                $("#cavity_lock").attr("checked", true);
+                APP.params.local['CAV_LOCK'] = { value: true };
+            }else {
+                $("#cavity_lock").attr("checked", false);
+                APP.params.local['CAV_LOCK'] = { value: false };
+            }
+        }
+
         if($.cookie('WLM_LOCK') === undefined) {
             $("#wlm_lock").attr("checked", false);
             APP.params.local['WLM_LOCK'] = { value: false };
@@ -905,6 +905,32 @@
             }else {
                 $("#wlm_lock").attr("checked", false);
                 APP.params.local['WLM_LOCK'] = { value: false };
+            }
+        }
+
+        if($.cookie('PIEZO_FEED') === undefined) {
+            $("#piezo_lock").attr("checked", false);
+            APP.params.local['PIEZO_FEED'] = { value: false };
+        } else {
+            if($.cookie('PIEZO_FEED') == 'true') {
+                $("#piezo_lock").attr("checked", true);
+                APP.params.local['PIEZO_FEED'] = { value: true };
+            }else {
+                $("#piezo_lock").attr("checked", false);
+                APP.params.local['PIEZO_FEED'] = { value: false };
+            }
+        }
+
+        if($.cookie('CUR_FEED') === undefined) {
+            $("#curr_lock").attr("checked", false);
+            APP.params.local['CUR_FEED'] = { value: false };
+        } else {
+            if($.cookie('CUR_FEED') == 'true') {
+                $("#curr_lock").attr("checked", true);
+                APP.params.local['CUR_FEED'] = { value: true };
+            }else {
+                $("#curr_lock").attr("checked", false);
+                APP.params.local['CUR_FEED'] = { value: false };
             }
         }
 
@@ -1264,6 +1290,26 @@ $(function() {
         APP.params.local = {};
     });
 
+    $("#piezo_lock").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $.cookie('PIEZO_FEED', checkBox);
+        
+        APP.params.local['PIEZO_FEED'] = { value: checkBox };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
+
+    $("#curr_lock").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $.cookie('CUR_FEED', checkBox);
+        
+        APP.params.local['CUR_FEED'] = { value: checkBox };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
+
     tran_lvl.oninput = function() {
         
         $.cookie('TRANS_LVL', this.value);
@@ -1429,6 +1475,8 @@ $(function() {
 
         $.cookie('CAV_LOCK', $('#cavity_lock').is(':checked'));
         $.cookie('WLM_LOCK', $('#wlm_lock').is(':checked'));
+        $.cookie('PIEZO_FEED', $('#piezo_lock').is(':checked'));
+        $.cookie('CUR_FEED', $('#curr_lock').is(':checked'));
         $.cookie('TRANS_LVL', tran_lvl.value);
 
         $.cookie('CH1_OUT_OFFSET', pzSl.value);

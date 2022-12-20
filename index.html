@@ -118,8 +118,8 @@
                             <div id="pltSett" class="panel-collapse collapse">
                                 <div class="panel-body" style="color: black;">
                                     <div class="row">
-                                        <button id="CH1_IN_SHOW" class="btn btn-primary" data-checked="true">Channel 1</button>
-                                        <button id="CH2_IN_SHOW" class="btn btn-primary" data-checked="true">Channel 2</button>
+                                        <button id="CH1_IN_SHOW" class="btn btn-primary" data-checked="true">Input 1</button>
+                                        <button id="CH2_IN_SHOW" class="btn btn-primary" data-checked="true">Input 2</button>
                                     </div>
                                     <div class="row">
                                         <label for="x_zoompan">X Range</label>
@@ -144,7 +144,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <label>Channel 1 Gain</label>
+                                        <label>Input 1 Gain (Cavity Transmission)</label>
                                     </div>
                                     <div class="row">
                                         <label>Probe Attenuation: </label>
@@ -161,7 +161,7 @@
                                         </select>
                                     </div>
                                     <div class="row">
-                                        <label>Channel 2 Gain</label>
+                                        <label>Input 2 Gain</label>
                                     </div>
                                     <div class="row">
                                         <label>Probe Attenuation: </label>
@@ -178,7 +178,7 @@
                                         </select>
                                     </div>
                                     <div class="row">
-                                        <label>Output 1 Gain</label>
+                                        <label>Output 1 Gain (Piezo)</label>
                                     </div>
                                     <div class="row">
                                         <label for="ch1_out_max">Max: </label>
@@ -189,7 +189,7 @@
                                         <input id="ch1_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
                                     </div>
                                     <div class="row">
-                                        <label>Output 2 Gain</label>
+                                        <label>Output 2 Gain (Current)</label>
                                     </div>
                                     <div class="row">
                                         <label for="ch2_out_max">Max: </label>
@@ -206,7 +206,7 @@
                             <div class="panel-heading">
                                 <h4 class="panel-title">
                                     <a data-toggle="collapse" href="#lockSett">
-                                        Lock Settings
+                                        Auto Lock Settings
                                     </a>
                                 </h4>
                             </div>
@@ -316,8 +316,8 @@
                                 <h1 id="graph_msg" style="display:none; color: rgb(189, 79, 79);">
                                     There is No Mode in the range of Scan! <br/> 
                                     Optimize parameters... </h1>
-                                <h1 id="mean_ch1">Mean Ch1 [V]: </h1>
-                                <h1 id="mean_ch2">Mean Ch2 [V]: </h1>
+                                <h1 id="mean_ch1">Mean In1 [V]: </h1>
+                                <h1 id="mean_ch2">Mean In2 [V]: </h1>
                             </div>
                         </div>
                     </div>
