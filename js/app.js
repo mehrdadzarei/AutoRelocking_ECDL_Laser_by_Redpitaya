@@ -322,7 +322,7 @@
         const freq_txt = document.getElementById("freq");
         const graph_msg = document.getElementById("graph_msg");
         const mean_ch1_txt = document.getElementById("mean_ch1");
-        // const mean_ch2_txt = document.getElementById("mean_ch2");
+        const mean_ch2_txt = document.getElementById("mean_ch2");
 
         if(!APP.running || APP.params.orig['AUTO_LOCK'].value) {
             pzSl.disabled = true;
@@ -384,6 +384,10 @@
         var mean_ch1_val = new_params['MEAN_CH1'].value;
         if('MEAN_CH1' in new_params && mean_ch1_val != undefined) {
             mean_ch1_txt.innerHTML = "Mean In1 [V]: ".concat(" ", mean_ch1_val.toFixed(3));
+        }
+        var mean_ch2_val = new_params['MEAN_CH2'].value;
+        if('MEAN_CH2' in new_params && mean_ch2_val != undefined) {
+            mean_ch2_txt.innerHTML = "Mean In2 [V]: ".concat(" ", mean_ch2_val.toFixed(3));
         }
     };
 
