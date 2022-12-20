@@ -595,6 +595,26 @@ void *piezo_scan_thread(void *args) {
     pthread_exit(NULL);
 }
 
+void locking() {
+
+    if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
+            
+            if(((transmision < trans_lev && CAV_LOCK.Value()) || 
+                (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
+                !scan_thread_running) {
+        
+                lev++;
+                if(lev > 100 || freq_diff > std_freq_diff) {
+
+                    pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
+                    lev = 0;
+                }
+            } else {
+                lev = 0;
+            }
+        }
+}
+
 void analyseData(int mul, int ch) {
 
     float *n_b = (float *)malloc(buff_size * sizeof(float));
@@ -622,9 +642,9 @@ void analyseData(int mul, int ch) {
         
         n_b[i - no_avr] = sum / (no_avr * 2);
         transmision = n_b[i - no_avr] * mul;
-        if(ch == 1) {
+        if(ch == 1 && CH1_IN_SHOW.Value()) {
             MEAN_CH1.Set(transmision);
-        } else {
+        } elif(ch == 2) {
             MEAN_CH2.Set(transmision);
             continue;                   // this channel is not for locking
         }
@@ -633,23 +653,7 @@ void analyseData(int mul, int ch) {
         if(transmision > trans_lev) {
             LOCK_STATE.Set(true);
         }
-        
-        if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
-            
-            if(((transmision < trans_lev && CAV_LOCK.Value()) || 
-                (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
-                !scan_thread_running) {
-        
-                lev++;
-                if(lev > 100 || freq_diff > std_freq_diff) {
-
-                    pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
-                    lev = 0;
-                }
-            } else {
-                lev = 0;
-            }
-        }
+        locking();
     }
     memcpy(buff1_avg, n_b, buff_size);
     free(n_b);
@@ -879,7 +883,8 @@ void UpdateSignals(void)
     // fillState = false;
     // rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;
 
-    if(appState && (CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
+    if(appState && 
+        (CAV_LOCK.Value() || WLM_LOCK.Value() || CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
 
         // while(1){
         //     rp_AcqGetTriggerState(&state);
@@ -892,13 +897,17 @@ void UpdateSignals(void)
         //     rp_AcqGetBufferFillState(&fillState);
         // }
 
-        if(CH1_IN_SHOW.Value()) {
+        // channel 1 from transmission for cavity lock
+        if(CAV_LOCK.Value() || CH1_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff1);
             analyseData(mul1, 1);
         }
         if(CH2_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
             analyseData(mul2, 2);
+        }
+        if(WLM_LOCK.Value()) {
+            locking();
         }
     }
     
