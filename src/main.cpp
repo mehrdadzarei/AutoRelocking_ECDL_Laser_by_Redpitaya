@@ -77,6 +77,11 @@ int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new valu
 float trg_freq = 0;
 float freq_diff = 0;
 const float std_freq_diff = 0.00003;
+const int distance_thr = 50;                // find peak in spectrum in this distance
+const float hight_thr = 1000;                // find peak in spectrum above this hight
+int no_peaks = 0;                           // number of peaks
+int no_peaks_diff = 0;
+int std_no_peaks_diff = 2;
 
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -324,6 +329,42 @@ int my_recv() {
     return 1;
 }
 
+// find multiple peaks in an array
+int find_peaks() {
+
+    int cnt = 0;
+    int j = 0;
+    int index = 0;
+    float peak = hight_thr;
+    bool find = false;
+    int ind_array[100] = {};
+    float peak_array[100] = {};
+
+    no_peaks = 0;
+
+    for(int i = 0; i < SIGNAL_SIZE_DEFAULT; i++) {
+        cnt = distance_thr + i;
+        cnt = ((cnt > SIGNAL_SIZE_DEFAULT) ? SIGNAL_SIZE_DEFAULT:cnt);
+        // find peak in the distance range
+        for(j = i; j < cnt; j++) {
+            // find max in the distance range
+            if(spec[j] > hight_thr && spec[j] > peak) {
+                index = j;
+                peak = spec[j];
+                find = true;
+            }
+        }
+        if(find) {
+            
+            find = false;
+            ind_array[no_peaks] = index;
+            peak_array[no_peaks] = peak;
+            no_peaks++;
+        }
+        i = --j;
+    }
+}
+
 // thread for wavemeter
 void *wavemeter_thread(void *args) {
 
@@ -352,6 +393,10 @@ void *wavemeter_thread(void *args) {
             diff = fabs(trg_freq - FREQUENCY.Value());
             if(diff < 50) {
                 freq_diff = diff;
+            }
+            if(CUR_FEED.Value()) {
+                find_peaks();
+                MEAN_CH2.Set(no_peaks);
             }
         }else {
             freq_diff = 0;
@@ -628,7 +673,7 @@ void analyseData(int mul, int ch) {
         memcpy(n_b, buff2, buff_size);
     }
  
-    for(int i = no_avr ; i < buff_size - no_avr ; i++ ){
+    for(int i = no_avr; i < buff_size - no_avr; i++ ){
         
         sum = 0;
         for (int j = -no_avr ; j < no_avr ; j++ ){
@@ -905,7 +950,7 @@ void UpdateSignals(void)
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
             analyseData(mul2, 2);
         }
-        if(WLM_LOCK.Value()) {
+        if(WLM_LOCK.Value() && !CAV_LOCK.Value()) {
             locking();
         }
     }
