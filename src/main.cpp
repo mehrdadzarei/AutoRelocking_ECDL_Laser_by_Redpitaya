@@ -38,8 +38,8 @@ void send_out_gen2(float val);
 #define PARAM_UPDATE_INTERVAL      1    // ms
 #define NUM_THREADS 2
 #define HEADER 64
-#define PORT 5015
-#define SERVER "192.168.0.154" // private
+// #define PORT 5015
+// #define SERVER "192.168.0.154" // private
 #define DISCONNECT_MESSAGE "!DISCONNECT"
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -77,7 +77,7 @@ int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new valu
 float trg_freq = 0;
 float freq_diff = 0;
 const float std_freq_diff = 0.00003;
-const int distance_thr = 50;                // find peak in spectrum in this distance
+const int distance_thr = 20;                // find peak in spectrum in this distance
 const float hight_thr = 1000;                // find peak in spectrum above this hight
 int no_peaks = 0;                           // number of peaks
 int no_peaks_diff = 0;
@@ -118,6 +118,8 @@ CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20
 // CIntParameter WAVEFORM("WAVEFORM", CBaseParameter::RW, 1, 0, 0, 2);
 
 CBooleanParameter WLM_CON("WLM_CON", CBaseParameter::RWSA, true, 0);
+CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
+CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CFloatParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, 0, 0, -10, 10000);
@@ -424,8 +426,9 @@ void connect_wlm() {
     // start communication with wavemeter
     sock = socket(AF_INET, SOCK_STREAM, 0);
     address.sin_family = AF_INET;
-    address.sin_port = htons(PORT);
-    address.sin_addr.s_addr = inet_addr(SERVER);//inet_addr(SERVER); // INADDR_ANY;
+    address.sin_port = htons(WLM_PORT.Value());
+    // address.sin_addr.s_addr = inet_addr(SERVER);    //inet_addr(SERVER); // INADDR_ANY;
+    address.sin_addr.s_addr = inet_addr(WLM_IP.Value().c_str());    // if value is string we have to convert it by c_str()
     client = connect(sock, (struct sockaddr *)&address, sizeof (address));
     
     if(client >= 0) {
@@ -1023,6 +1026,8 @@ void OnNewParams(void)
     CH1_OUT_OFFSET.Update();
     CH2_OUT_OFFSET.Update();
     
+    WLM_IP.Update();
+    WLM_PORT.Update();
     WLM_CH.Update();
     TARGET_FREQUENCY.Update();
 

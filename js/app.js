@@ -729,6 +729,8 @@
         var pzN = document.getElementById("piezoN");
         var curSl = document.getElementById("curr");
         var curN = document.getElementById("currN");
+        var ip = document.getElementById("ip");
+        var port = document.getElementById("port");
         var target = document.getElementById("target");
         const targ_freq_txt = document.getElementById("targ_freq")
 
@@ -946,6 +948,22 @@
             tran_lvl.value = $.cookie('TRANS_LVL');
         }
 
+        if($.cookie('WLM_IP') === undefined) {
+            APP.params.local['WLM_IP'] = { value: "192.168.0.154" };
+            ip.value = "192.168.0.154";
+        } else {
+            APP.params.local['WLM_IP'] = { value: $.cookie('WLM_IP') };
+            ip.value = $.cookie('WLM_IP');
+        }
+
+        if($.cookie('WLM_PORT') === undefined) {
+            APP.params.local['WLM_PORT'] = { value: 5015 };
+            port.value = 5015;
+        } else {
+            APP.params.local['WLM_PORT'] = { value: $.cookie('WLM_PORT') };
+            port.value = $.cookie('WLM_PORT');
+        }
+
         if($.cookie('WLM_CH') === undefined) {
             $("#WLM_CH").val(0);
             APP.params.local['WLM_CH'] = { value: 0 };
@@ -1011,6 +1029,8 @@ $(function() {
     var pzN = document.getElementById("piezoN");
     var curSl = document.getElementById("curr");
     var curN = document.getElementById("currN");
+    var ip = document.getElementById("ip");
+    var port = document.getElementById("port");
     var target = document.getElementById("target");
     const targ_freq_txt = document.getElementById("targ_freq")
     
@@ -1238,7 +1258,7 @@ $(function() {
         APP.params.local = {};
     });
 
-    ch1_out_max.oninput = function() {
+    ch1_out_max.onchange = function() {
         
         pzN.max = pzSl.max = this.value;
 
@@ -1248,7 +1268,7 @@ $(function() {
         APP.params.local = {};
     }
 
-    ch1_out_min.oninput = function() {
+    ch1_out_min.onchange = function() {
         
         pzN.min = pzSl.min = this.value;
 
@@ -1258,7 +1278,7 @@ $(function() {
         APP.params.local = {};
     }
 
-    ch2_out_max.oninput = function() {
+    ch2_out_max.onchange = function() {
         
         $.cookie('CH2_OUT_MAX', this.value);
         APP.params.local['CH2_OUT_MAX'] = { value: this.value };
@@ -1266,7 +1286,7 @@ $(function() {
         APP.params.local = {};
     }
 
-    ch2_out_min.oninput = function() {
+    ch2_out_min.onchange = function() {
         
         $.cookie('CH2_OUT_MIN', this.value);
         APP.params.local['CH2_OUT_MIN'] = { value: this.value };
@@ -1314,7 +1334,7 @@ $(function() {
         APP.params.local = {};
     });
 
-    tran_lvl.oninput = function() {
+    tran_lvl.onchange = function() {
         
         $.cookie('TRANS_LVL', this.value);
         APP.params.local['TRANS_LVL'] = { value: this.value };
@@ -1362,6 +1382,23 @@ $(function() {
         APP.params.local = {};
     }
 
+    ip.onchange = function() {
+        
+        $.cookie('WLM_IP', this.value);
+        APP.params.local['WLM_IP'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+        console.log(this.value);
+    }
+
+    port.onchange = function() {
+        
+        $.cookie('WLM_PORT', this.value);
+        APP.params.local['WLM_PORT'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    }
+
     $("#WLM_CH").change(function() {
         var val = $(this).children("option:selected").val();
         $.cookie('WLM_CH', val);
@@ -1370,7 +1407,7 @@ $(function() {
         APP.params.local = {};
     });
 
-    target.oninput = function() {
+    target.onchange = function() {
         
         var val = this.value;
         let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
@@ -1486,6 +1523,8 @@ $(function() {
         $.cookie('CH1_OUT_OFFSET', pzSl.value);
         $.cookie('CH2_OUT_OFFSET', curSl.value);
 
+        $.cookie('WLM_IP', ip.value);
+        $.cookie('WLM_PORT', port.value);
         $.cookie('WLM_CH', $("#WLM_CH").children("option:selected").val());
         $.cookie('TARGET_FREQUENCY', target.value);
         
