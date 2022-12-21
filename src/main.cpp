@@ -405,7 +405,7 @@ void set_reference() {
 void *wavemeter_thread(void *args) {
 
     wlm_thread_running = true;
-    char msg_send[200] = {};
+    char msg_send[100] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
@@ -414,9 +414,12 @@ void *wavemeter_thread(void *args) {
         
         memset(msg_send, 0, strlen(msg_send));
         
+        // sprintf((char*)msg_send, 
+        //         "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
+        //         WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
         sprintf((char*)msg_send, 
-                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
+                "{\"CH\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
+                ch, true, true, true);
 
         msg_send[strlen(msg_send)] = '\0';
         if(my_send(msg_send) == 0) {
