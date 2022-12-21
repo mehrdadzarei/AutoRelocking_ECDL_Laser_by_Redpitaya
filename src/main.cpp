@@ -78,8 +78,8 @@ float trg_freq = 0;
 float freq_diff = 0;
 const float std_freq_diff = 0.00003;
 const int distance_thr = 20;                // find peak in spectrum in this distance
-const float hight_thr = 1000;                // find peak in spectrum above this hight
-int no_peaks = 0;                           // number of peaks
+float hight_thr = 1000;                // find peak in spectrum above this hight
+int trg_no_peaks = 0;
 int no_peaks_diff = 0;
 int std_no_peaks_diff = 2;
 
@@ -124,6 +124,7 @@ CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CFloatParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 10000);
+CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
 CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
@@ -332,7 +333,7 @@ int my_recv() {
 }
 
 // find multiple peaks in an array
-int find_peaks() {
+int find_peaks(int *no_peaks, float *min_peak) {
 
     int cnt = 0;
     int j = 0;
@@ -341,8 +342,9 @@ int find_peaks() {
     bool find = false;
     int ind_array[100] = {};
     float peak_array[100] = {};
-
-    no_peaks = 0;
+    
+    *no_peaks = 0;                 // number of peaks
+    *min_peak = 4200;              // highest value of wavemeter
 
     for(int i = 0; i < SIGNAL_SIZE_DEFAULT; i++) {
         cnt = distance_thr + i;
@@ -359,9 +361,12 @@ int find_peaks() {
         if(find) {
             
             find = false;
-            ind_array[no_peaks] = index;
-            peak_array[no_peaks] = peak;
-            no_peaks++;
+            ind_array[*no_peaks] = index;
+            peak_array[*no_peaks] = peak;
+            *no_peaks += 1;
+            if(peak < *min_peak) {
+                *min_peak = peak;
+            }
         }
         i = --j;
     }
@@ -373,6 +378,8 @@ void *wavemeter_thread(void *args) {
     wlm_thread_running = true;
     char msg_send[100] = {};
     float diff = 0;
+    int no_peaks = 0;
+    float min_peak = 0;
     
     while(wlm_thread_running) {
         
@@ -396,9 +403,15 @@ void *wavemeter_thread(void *args) {
             if(diff < 50) {
                 freq_diff = diff;
             }
+
             if(CUR_FEED.Value()) {
-                find_peaks();
-                MEAN_CH2.Set(no_peaks);
+
+                find_peaks(&no_peaks, &min_peak);
+                if(trg_no_peaks == 0) {
+                    no_peaks_diff = 0;
+                } else {
+                    no_peaks_diff = abs(trg_no_peaks - no_peaks);
+                }
             }
         }else {
             freq_diff = 0;
@@ -583,7 +596,6 @@ void *piezo_scan_thread(void *args) {
             LOCK_STATE.Set(false);
         }
 
-        // MEAN_CH1.Set(transmision);
         if(WLM_LOCK.Value()) {
 
             max_no_scan = 5;
@@ -1030,6 +1042,7 @@ void OnNewParams(void)
     WLM_PORT.Update();
     WLM_CH.Update();
     TARGET_FREQUENCY.Update();
+    SET_REF.Update();
 
     // Run or stop APP
     if(APP_RUN.Value() != appState) {
@@ -1112,6 +1125,20 @@ void OnNewParams(void)
     }
 
     trg_freq = TARGET_FREQUENCY.Value();
+
+    // set reference pattern
+    if(SET_REF.Value()) {
+
+        
+        int no_peaks = 0;
+        float min_peak = 0;
+
+        find_peaks(&no_peaks, &min_peak);
+        hight_thr = min_peak / 2;
+        find_peaks(&no_peaks, &min_peak);
+        trg_no_peaks = no_peaks;
+        SET_REF.Set(false);
+    }
 
     if(prev_ch != WLM_CH.Value()) {
         ch = WLM_CH.Value();

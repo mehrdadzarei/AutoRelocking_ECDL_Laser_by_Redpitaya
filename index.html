@@ -210,7 +210,7 @@
                                     </a>
                                 </h4>
                             </div>
-                            <div id="lockSett" class="panel-collapse collapse">
+                            <div id="lockSett" class="panel-collapse collapse in">
                                 <div class="panel-body" style="color: black;">
                                     <div class="row">
                                         <input id="cavity_lock" type="checkbox">
@@ -243,7 +243,7 @@
                                     </a>
                                 </h4>
                             </div>
-                            <div id="lsCrl" class="panel-collapse collapse">
+                            <div id="lsCrl" class="panel-collapse collapse in">
                                 <div class="panel-body" style="color: black;">
                                     <div class="row">
                                         <label for="piezoN">Piezo Controller: </label>
@@ -270,10 +270,10 @@
                                     </a>
                                 </h4>
                             </div>
-                            <div id="wlm" class="panel-collapse collapse">
+                            <div id="wlm" class="panel-collapse collapse in">
                                 <div class="panel-body" style="color: black;">
                                     <div class="row">
-                                        <label>Wavemeter Server:</label>
+                                        <label>Wavemeter Server (IP, PORT)</label>
                                     </div>
                                     <div class="row">
                                         <label for="ip">IP: </label>
@@ -299,6 +299,10 @@
                                     <div class="row">
                                         <label for="target">Target [THz]: </label>
                                         <input id="target" style="width: 105px;" type="number" step="0.00001" value="473.88010">
+                                    </div>
+                                    <div class="row">
+                                        <label for="set_ref">Reference Pattern: </label>
+                                        <button id="set_ref" class="btn btn-primary" style="width: 80px;">Set</button>
                                     </div>
                                 </div>
                             </div>

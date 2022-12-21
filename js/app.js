@@ -1388,7 +1388,6 @@ $(function() {
         APP.params.local['WLM_IP'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
-        console.log(this.value);
     }
 
     port.onchange = function() {
@@ -1417,6 +1416,13 @@ $(function() {
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     }
+
+    $("#set_ref").click(function() {
+        
+        APP.params.local['SET_REF'] = { value: true };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
 
     APP.drawGraphGrid();
     APP.drawSpecGraphGrid();
