@@ -270,7 +270,7 @@
                                     </a>
                                 </h4>
                             </div>
-                            <div id="wlm" class="panel-collapse collapse in">
+                            <div id="wlm" class="panel-collapse collapse">
                                 <div class="panel-body" style="color: black;">
                                     <div class="row">
                                         <label>Wavemeter Server (IP, PORT)</label>
@@ -280,7 +280,7 @@
                                         <input id="ip" style="width: 120px;" type="text" value="192.168.0.154">
                                     </div>
                                     <div class="row">
-                                        <label for="port"> PORT: </label>
+                                        <label for="port">PORT: </label>
                                         <input id="port" style="width: 80px;" type="number" value="5015">
                                     </div>
                                     <div class="row">
@@ -295,6 +295,21 @@
                                             <option value="7">7</option>
                                             <option value="8">8</option>
                                         </select>
+                                    </div>
+                                    <div class="row">
+                                        <label>ٍExposure [ms]</label>
+                                    </div>
+                                    <div class="row">
+                                        <label for="exp_up">1 </label>
+                                        <input id="exp_up" style="width: 50px;" type="number" min="1" max="9999" step="1" value="2">
+                                    </div>
+                                    <div class="row">
+                                        <label for="exp_down">2+ </label>
+                                        <input id="exp_down" style="width: 50px;" type="number" min="0" max="9999" step="1" value="0">
+                                    </div>
+                                    <div class="row">
+                                        <input id="exp_auto" type="checkbox">
+                                        <label for="exp_auto"> Automatic Exp.</label>
                                     </div>
                                     <div class="row">
                                         <label for="target">Target [THz]: </label>

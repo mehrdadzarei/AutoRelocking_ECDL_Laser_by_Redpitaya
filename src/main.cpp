@@ -81,7 +81,7 @@ const int distance_thr = 20;                // find peak in spectrum in this dis
 float hight_thr = 1000;                // find peak in spectrum above this hight
 int trg_no_peaks = 0;
 int no_peaks_diff = 0;
-int std_no_peaks_diff = 2;
+int std_no_peaks_diff = 3;
 
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -121,6 +121,9 @@ CBooleanParameter WLM_CON("WLM_CON", CBaseParameter::RWSA, true, 0);
 CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
 CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
+CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
+CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
+CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RWSA, false, 0);
 CFloatParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, 0, 0, -10, 10000);
 CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 10000);
@@ -245,6 +248,7 @@ int my_recv() {
     JSONNode obj;
     // int json_len;
     float data, ratio;
+    int data_int;
     JSONNode data_array;
     JSONNode data_child;
 
@@ -303,6 +307,19 @@ int my_recv() {
         if(!obj.empty()) {
 
             // json_len = obj.size();
+
+            data_int = obj.at("EXP_UP").as_int();
+            EXP_UP.Set(data_int);
+
+            data_int = obj.at("EXP_DOWN").as_int();
+            EXP_DOWN.Set(data_int);
+
+            data_int = obj.at("EXP_AUTO").as_int();
+            if(data_int == 1) {
+                EXP_AUTO.Set(true);
+            } else {
+                EXP_AUTO.Set(false);
+            }
 
             data = obj.at("WAVEL").as_float();
             WAVELENGTH.Set(data);
@@ -372,11 +389,23 @@ int find_peaks(int *no_peaks, float *min_peak) {
     }
 }
 
+// set reference pattern
+void set_reference() {
+
+    int no_peaks = 0;
+    float min_peak = 0;
+
+    find_peaks(&no_peaks, &min_peak);
+    hight_thr = min_peak / 2;
+    find_peaks(&no_peaks, &min_peak);
+    trg_no_peaks = no_peaks;
+}
+
 // thread for wavemeter
 void *wavemeter_thread(void *args) {
 
     wlm_thread_running = true;
-    char msg_send[100] = {};
+    char msg_send[200] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
@@ -386,8 +415,9 @@ void *wavemeter_thread(void *args) {
         memset(msg_send, 0, strlen(msg_send));
         
         sprintf((char*)msg_send, 
-                "{\"CH\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-                ch, true, true, true);
+                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
+                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
+
         msg_send[strlen(msg_send)] = '\0';
         if(my_send(msg_send) == 0) {
             continue;
@@ -408,13 +438,15 @@ void *wavemeter_thread(void *args) {
 
                 find_peaks(&no_peaks, &min_peak);
                 if(trg_no_peaks == 0) {
-                    no_peaks_diff = 0;
-                } else {
-                    no_peaks_diff = abs(trg_no_peaks - no_peaks);
+                    set_reference();
                 }
+                no_peaks_diff = abs(trg_no_peaks - no_peaks);
+            } else {
+                no_peaks_diff = 0;
             }
         }else {
             freq_diff = 0;
+            no_peaks_diff = 0;
         }
 
         usleep(1000);
@@ -662,7 +694,8 @@ void locking() {
     if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
             
         if(((transmision < trans_lev && CAV_LOCK.Value()) || 
-            (freq_diff > std_freq_diff && WLM_LOCK.Value())) && 
+            (freq_diff > std_freq_diff && WLM_LOCK.Value()) ||
+            (no_peaks_diff > std_no_peaks_diff && WLM_LOCK.Value() && CUR_FEED.Value())) && 
             !scan_thread_running) {
     
             lev++;
@@ -1041,6 +1074,9 @@ void OnNewParams(void)
     WLM_IP.Update();
     WLM_PORT.Update();
     WLM_CH.Update();
+    EXP_UP.Update();
+    EXP_AUTO.Update();
+    EXP_DOWN.Update();
     TARGET_FREQUENCY.Update();
     SET_REF.Update();
 
@@ -1129,20 +1165,13 @@ void OnNewParams(void)
     // set reference pattern
     if(SET_REF.Value()) {
 
-        
-        int no_peaks = 0;
-        float min_peak = 0;
-
-        find_peaks(&no_peaks, &min_peak);
-        hight_thr = min_peak / 2;
-        find_peaks(&no_peaks, &min_peak);
-        trg_no_peaks = no_peaks;
+        set_reference();
         SET_REF.Set(false);
     }
 
-    if(prev_ch != WLM_CH.Value()) {
-        ch = WLM_CH.Value();
-    }
+    // if(prev_ch != WLM_CH.Value()) {
+    //     ch = WLM_CH.Value();
+    // }
 }
 
 void OnNewSignals(void){}

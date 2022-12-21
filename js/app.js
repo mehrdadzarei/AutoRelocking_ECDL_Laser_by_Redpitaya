@@ -317,9 +317,14 @@
         var pzN = document.getElementById("piezoN");
         var curSl = document.getElementById("curr");
         var curN = document.getElementById("currN");
+        
+        var exp_up = document.getElementById("exp_up");
+        var exp_down = document.getElementById("exp_down");
+
         const wlm_msg = document.getElementById("wlm_msg");
         const wavel_txt = document.getElementById("wavel");
         const freq_txt = document.getElementById("freq");
+        
         const graph_msg = document.getElementById("graph_msg");
         const mean_ch1_txt = document.getElementById("mean_ch1");
         const mean_ch2_txt = document.getElementById("mean_ch2");
@@ -348,6 +353,24 @@
 
             curSl.value = curVal;
             curN.value = curVal;
+        }
+
+        var exp_up_val = new_params['EXP_UP'].value;
+        if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
+
+            exp_up.value = exp_up_val;
+        }
+
+        var exp_down_val = new_params['EXP_DOWN'].value;
+        if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+
+            exp_down.value = exp_down_val;
+        }
+
+        var exp_auto_val = new_params['EXP_AUTO'].value;
+        if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != $('#exp_auto').is(':checked')) {
+
+            $("#exp_auto").attr("checked", exp_auto_val);
         }
 
         if(APP.running) {
@@ -724,13 +747,18 @@
         var ch1_out_min = document.getElementById("ch1_out_min");
         var ch2_out_max = document.getElementById("ch2_out_max");
         var ch2_out_min = document.getElementById("ch2_out_min");
+        
         var tran_lvl = document.getElementById("tran_lvl");
+        
         var pzSl = document.getElementById("piezo");
         var pzN = document.getElementById("piezoN");
         var curSl = document.getElementById("curr");
         var curN = document.getElementById("currN");
+        
         var ip = document.getElementById("ip");
         var port = document.getElementById("port");
+        var exp_up = document.getElementById("exp_up");
+        var exp_down = document.getElementById("exp_down");
         var target = document.getElementById("target");
         const targ_freq_txt = document.getElementById("targ_freq")
 
@@ -972,6 +1000,35 @@
             APP.params.local['WLM_CH'] = { value: $.cookie('WLM_CH') };
         }
 
+        if($.cookie('EXP_UP') === undefined) {
+            APP.params.local['EXP_UP'] = { value: 2 };
+            exp_up.value = 2;
+        } else {
+            APP.params.local['EXP_UP'] = { value: $.cookie('EXP_UP') };
+            exp_up.value = $.cookie('EXP_UP');
+        }
+
+        if($.cookie('EXP_DOWN') === undefined) {
+            APP.params.local['EXP_DOWN'] = { value: 0 };
+            exp_down.value = 0;
+        } else {
+            APP.params.local['EXP_DOWN'] = { value: $.cookie('EXP_DOWN') };
+            exp_down.value = $.cookie('EXP_DOWN');
+        }
+
+        if($.cookie('EXP_AUTO') === undefined) {
+            $("#exp_auto").attr("checked", false);
+            APP.params.local['EXP_AUTO'] = { value: false };
+        } else {
+            if($.cookie('EXP_AUTO') == 'true') {
+                $("#exp_auto").attr("checked", true);
+                APP.params.local['EXP_AUTO'] = { value: true };
+            }else {
+                $("#exp_auto").attr("checked", false);
+                APP.params.local['EXP_AUTO'] = { value: false };
+            }
+        }
+
         if($.cookie('TARGET_FREQUENCY') === undefined) {
             APP.params.local['TARGET_FREQUENCY'] = { value: 473.39686 };
             target.value = 473.39686;
@@ -1024,13 +1081,18 @@ $(function() {
     var ch1_out_min = document.getElementById("ch1_out_min");
     var ch2_out_max = document.getElementById("ch2_out_max");
     var ch2_out_min = document.getElementById("ch2_out_min");
+    
     var tran_lvl = document.getElementById("tran_lvl");
+    
     var pzSl = document.getElementById("piezo");
     var pzN = document.getElementById("piezoN");
     var curSl = document.getElementById("curr");
     var curN = document.getElementById("currN");
+    
     var ip = document.getElementById("ip");
     var port = document.getElementById("port");
+    var exp_up = document.getElementById("exp_up");
+    var exp_down = document.getElementById("exp_down");
     var target = document.getElementById("target");
     const targ_freq_txt = document.getElementById("targ_freq")
     
@@ -1406,6 +1468,32 @@ $(function() {
         APP.params.local = {};
     });
 
+    exp_up.onchange = function() {
+        
+        $.cookie('EXP_UP', this.value);
+        APP.params.local['EXP_UP'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    }
+
+    exp_down.onchange = function() {
+        
+        $.cookie('EXP_DOWN', this.value);
+        APP.params.local['EXP_DOWN'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    }
+
+    $("#exp_auto").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $.cookie('EXP_AUTO', checkBox);
+        
+        APP.params.local['EXP_AUTO'] = { value: checkBox };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
+
     target.onchange = function() {
         
         var val = this.value;
@@ -1532,6 +1620,9 @@ $(function() {
         $.cookie('WLM_IP', ip.value);
         $.cookie('WLM_PORT', port.value);
         $.cookie('WLM_CH', $("#WLM_CH").children("option:selected").val());
+        $.cookie('EXP_UP', exp_up.value);
+        $.cookie('EXP_DOWN', exp_down.value);
+        $.cookie('EXP_AUTO', $('#exp_auto').is(':checked'));
         $.cookie('TARGET_FREQUENCY', target.value);
         
         APP.unexpectedClose = false;
