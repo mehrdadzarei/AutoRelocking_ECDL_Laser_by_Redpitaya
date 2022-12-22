@@ -355,23 +355,23 @@
             curN.value = curVal;
         }
 
-        var exp_up_val = new_params['EXP_UP'].value;
-        if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
+        // var exp_up_val = new_params['EXP_UP'].value;
+        // if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
 
-            exp_up.value = exp_up_val;
-        }
+        //     exp_up.value = exp_up_val;
+        // }
 
-        var exp_down_val = new_params['EXP_DOWN'].value;
-        if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+        // var exp_down_val = new_params['EXP_DOWN'].value;
+        // if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
 
-            exp_down.value = exp_down_val;
-        }
+        //     exp_down.value = exp_down_val;
+        // }
 
-        var exp_auto_val = new_params['EXP_AUTO'].value;
-        if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != $('#exp_auto').is(':checked')) {
+        // var exp_auto_val = new_params['EXP_AUTO'].value;
+        // if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != $('#exp_auto').is(':checked')) {
 
-            $("#exp_auto").attr("checked", exp_auto_val);
-        }
+        //     $("#exp_auto").attr("checked", exp_auto_val);
+        // }
 
         if(APP.running) {
             
@@ -854,9 +854,9 @@
 
         if($.cookie('CH1_OUT_MAX') === undefined) {
             
-            APP.params.local['CH1_OUT_MAX'] = { value: 0 };
-            ch1_out_max.value = 0;
-            pzN.max = pzSl.max = 0;
+            APP.params.local['CH1_OUT_MAX'] = { value: 1 };
+            ch1_out_max.value = 1;
+            pzN.max = pzSl.max = 1;
         } else {
             
             APP.params.local['CH1_OUT_MAX'] = { value: $.cookie('CH1_OUT_MAX') };
@@ -866,9 +866,9 @@
 
         if($.cookie('CH1_OUT_MIN') === undefined) {
             
-            APP.params.local['CH1_OUT_MIN'] = { value: 0 };
-            ch1_out_min.value = 0;
-            pzN.min = pzSl.min = 0;
+            APP.params.local['CH1_OUT_MIN'] = { value: -1 };
+            ch1_out_min.value = -1;
+            pzN.min = pzSl.min = -1;
         } else {
             
             APP.params.local['CH1_OUT_MIN'] = { value: $.cookie('CH1_OUT_MIN') };
@@ -877,9 +877,9 @@
         }
 
         if($.cookie('CH2_OUT_MAX') === undefined) {
-            APP.params.local['CH2_OUT_MAX'] = { value: 0 };
-            ch2_out_max.value = 0;
-            curN.max = curSl.max = 0;
+            APP.params.local['CH2_OUT_MAX'] = { value: 1 };
+            ch2_out_max.value = 1;
+            curN.max = curSl.max = 1;
         } else {
             APP.params.local['CH2_OUT_MAX'] = { value: $.cookie('CH2_OUT_MAX') };
             ch2_out_max.value = $.cookie('CH2_OUT_MAX');
@@ -887,9 +887,9 @@
         }
 
         if($.cookie('CH2_OUT_MIN') === undefined) {
-            APP.params.local['CH2_OUT_MIN'] = { value: 0 };
-            ch2_out_min.value = 0;
-            curN.min = curSl.min = 0;
+            APP.params.local['CH2_OUT_MIN'] = { value: -1 };
+            ch2_out_min.value = -1;
+            curN.min = curSl.min = -1;
         } else {
             APP.params.local['CH2_OUT_MIN'] = { value: $.cookie('CH2_OUT_MIN') };
             ch2_out_min.value = $.cookie('CH2_OUT_MIN');
@@ -1322,6 +1322,8 @@ $(function() {
 
     ch1_out_max.onchange = function() {
         
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
         pzN.max = pzSl.max = this.value;
 
         $.cookie('CH1_OUT_MAX', this.value);
@@ -1332,6 +1334,8 @@ $(function() {
 
     ch1_out_min.onchange = function() {
         
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
         pzN.min = pzSl.min = this.value;
 
         $.cookie('CH1_OUT_MIN', this.value);
@@ -1342,6 +1346,10 @@ $(function() {
 
     ch2_out_max.onchange = function() {
         
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
+        curN.max = curSl.max = this.value;
+
         $.cookie('CH2_OUT_MAX', this.value);
         APP.params.local['CH2_OUT_MAX'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1350,6 +1358,10 @@ $(function() {
 
     ch2_out_min.onchange = function() {
         
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
+        curN.min = curSl.min = this.value;
+
         $.cookie('CH2_OUT_MIN', this.value);
         APP.params.local['CH2_OUT_MIN'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1398,6 +1410,9 @@ $(function() {
 
     tran_lvl.onchange = function() {
         
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
+
         $.cookie('TRANS_LVL', this.value);
         APP.params.local['TRANS_LVL'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1415,9 +1430,10 @@ $(function() {
 
     pzN.oninput = function() {
         
-        // this.value = this.value > 10 ? this.max : this.value;
-        // this.value = this.value < -10 ? this.min : this.value;
+        // this.value = this.value > ch1_out_max.value ? ch1_out_max.value : this.value;
+        // this.value = this.value < ch1_out_min.value ? ch1_out_min.value : this.value;
         pzSl.value = this.value;
+
         $.cookie('CH1_OUT_OFFSET', this.value);
         APP.params.local['CH1_OUT_OFFSET'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1435,9 +1451,10 @@ $(function() {
 
     curN.oninput = function() {
         
-        // this.value = this.value > 10 ? this.max : this.value;
-        // this.value = this.value < -10 ? this.min : this.value;
+        // this.value = this.value > this.max ? this.max : this.value;
+        // this.value = this.value < this.min ? this.min : this.value;
         curSl.value = this.value;
+
         $.cookie('CH2_OUT_OFFSET', this.value);
         APP.params.local['CH2_OUT_OFFSET'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1468,16 +1485,22 @@ $(function() {
         APP.params.local = {};
     });
 
-    exp_up.onchange = function() {
+    exp_up.oninput = function() {
         
+        this.value = this.value > 9999 ? this.max : this.value;
+        this.value = this.value < 2 ? this.min : this.value;
+
         $.cookie('EXP_UP', this.value);
         APP.params.local['EXP_UP'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     }
 
-    exp_down.onchange = function() {
+    exp_down.oninput = function() {
         
+        this.value = this.value > 9999 ? this.max : this.value;
+        this.value = this.value < 0 ? this.min : this.value;
+
         $.cookie('EXP_DOWN', this.value);
         APP.params.local['EXP_DOWN'] = { value: this.value };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));

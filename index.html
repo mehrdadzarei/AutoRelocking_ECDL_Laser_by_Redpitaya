@@ -78,7 +78,7 @@
                             <img class="back-btn", src="../assets/images/navigation_arrow_left.png">
                         </a>
                         <img class="logo", width="110", src="../assets/images/navigation_logo.png">
-                        <h1 class="nav-name">Auto Relocking ECDL</h1>
+                        <h1 class="nav-name">Auto Relocking ECDL Laser</h1>
                     </div>
 
                     <div class="collapse navbar-collapse">
@@ -182,22 +182,22 @@
                                     </div>
                                     <div class="row">
                                         <label for="ch1_out_max">Max: </label>
-                                        <input id="ch1_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                        <input id="ch1_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="1">
                                     </div>
                                     <div class="row">
                                         <label for="ch1_out_min">Min: </label>
-                                        <input id="ch1_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                        <input id="ch1_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="-1">
                                     </div>
                                     <div class="row">
                                         <label>Output 2 Gain (Current)</label>
                                     </div>
                                     <div class="row">
                                         <label for="ch2_out_max">Max: </label>
-                                        <input id="ch2_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                        <input id="ch2_out_max" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="1">
                                     </div>
                                     <div class="row">
                                         <label for="ch2_out_min">Min: </label>
-                                        <input id="ch2_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="0">
+                                        <input id="ch2_out_min" style="width: 80px;" type="number" min="-20" max="20" step="0.1" value="-1">
                                     </div>
                                 </div>
                             </div>
@@ -301,7 +301,7 @@
                                     </div>
                                     <div class="row">
                                         <label for="exp_up">1 </label>
-                                        <input id="exp_up" style="width: 50px;" type="number" min="1" max="9999" step="1" value="2">
+                                        <input id="exp_up" style="width: 50px;" type="number" min="2" max="9999" step="1" value="2">
                                     </div>
                                     <div class="row">
                                         <label for="exp_down">2+ </label>
@@ -325,6 +325,17 @@
                     </div>
 
                     <div id="main" class="col-xs-12 col-sm-9 col-md-9 col-lg-9">
+                        <div id="info_bofere">
+                            <div id="graph_info">
+                                <h3 id="graph_msg" style="display:none; color: rgb(189, 79, 79);">
+                                    There is No Mode in the range of Scan! Optimize parameters... </h3>
+                                <div class="row">
+                                    <h3 class="col-xs-12 col-sm-2 col-md-2 col-lg-2"> Scope</h3>
+                                    <h3 id="mean_ch1" class="col-xs-12 col-sm-5 col-md-4 col-lg-4">Mean In1 [V]: </h3>
+                                    <h3 id="mean_ch2" class="col-xs-12 col-sm-5 col-md-4 col-lg-4">Mean In2 [V]: </h3>
+                                </div>
+                            </div>
+                        </div>
                         <div id="graphs_holder">
                             <!-- <div id="ytitle">Voltage [ V ]</div> -->
                             <div id="graphs">
@@ -336,18 +347,11 @@
                             </div>
                         </div>
                         <div id="info">
-                            <div id="wlm_info" class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
-                                <h1 id="wlm_msg" style="display:none; color: rgb(189, 79, 79);">Wavemeter is not Connected! </h1>
-                                <h1 id="wavel">Wavelength [nm]: </h1>
-                                <h1 id="freq">Frequency [THz]: </h1>
-                                <h1 id="targ_freq">Target [THz]: &emsp;&ensp;&nbsp;</h1>
-                            </div>
-                            <div id="graph_info" class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
-                                <h1 id="graph_msg" style="display:none; color: rgb(189, 79, 79);">
-                                    There is No Mode in the range of Scan! <br/> 
-                                    Optimize parameters... </h1>
-                                <h1 id="mean_ch1">Mean In1 [V]: </h1>
-                                <h1 id="mean_ch2">Mean In2 [V]: </h1>
+                            <div id="wlm_info">
+                                <h2 id="wlm_msg" style="display:none; color: rgb(189, 79, 79);">Wavemeter is not Connected! </h2>
+                                <h2 id="wavel">Wavelength [nm]: </h2>
+                                <h2 id="freq">Frequency [THz]: </h2>
+                                <h2 id="targ_freq">Target [THz]: &emsp;&ensp;&nbsp;</h2>
                             </div>
                         </div>
                     </div>

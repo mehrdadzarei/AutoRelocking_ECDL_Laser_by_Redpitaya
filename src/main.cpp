@@ -308,18 +308,18 @@ int my_recv() {
 
             // json_len = obj.size();
 
-            data_int = obj.at("EXP_UP").as_int();
-            EXP_UP.Set(data_int);
+            // data_int = obj.at("EXP_UP").as_int();
+            // EXP_UP.Set(data_int);
 
-            data_int = obj.at("EXP_DOWN").as_int();
-            EXP_DOWN.Set(data_int);
+            // data_int = obj.at("EXP_DOWN").as_int();
+            // EXP_DOWN.Set(data_int);
 
-            data_int = obj.at("EXP_AUTO").as_int();
-            if(data_int == 1) {
-                EXP_AUTO.Set(true);
-            } else {
-                EXP_AUTO.Set(false);
-            }
+            // data_int = obj.at("EXP_AUTO").as_int();
+            // if(data_int == 1) {
+            //     EXP_AUTO.Set(true);
+            // } else {
+            //     EXP_AUTO.Set(false);
+            // }
 
             data = obj.at("WAVEL").as_float();
             WAVELENGTH.Set(data);
@@ -414,13 +414,10 @@ void *wavemeter_thread(void *args) {
         
         memset(msg_send, 0, strlen(msg_send));
         
-        // sprintf((char*)msg_send, 
-        //         "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-        //         WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
         sprintf((char*)msg_send, 
-                "{\"CH\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-                ch, true, true, true);
-
+                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
+                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
+        
         msg_send[strlen(msg_send)] = '\0';
         if(my_send(msg_send) == 0) {
             continue;
@@ -979,7 +976,8 @@ void UpdateSignals(void)
     // rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;
 
     if(appState && 
-        (CAV_LOCK.Value() || WLM_LOCK.Value() || CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
+        (CAV_LOCK.Value() || WLM_LOCK.Value() || 
+        CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
 
         // while(1){
         //     rp_AcqGetTriggerState(&state);
@@ -993,7 +991,7 @@ void UpdateSignals(void)
         // }
 
         // channel 1 from transmission for cavity lock
-        if(CAV_LOCK.Value() || CH1_IN_SHOW.Value()) {
+        if((CAV_LOCK.Value() && AUTO_LOCK.Value()) || CH1_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff1);
             analyseData(mul1, 1);
         }
@@ -1001,7 +999,7 @@ void UpdateSignals(void)
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
             analyseData(mul2, 2);
         }
-        if(WLM_LOCK.Value() && !CAV_LOCK.Value()) {
+        if(WLM_LOCK.Value() && !CAV_LOCK.Value() && AUTO_LOCK.Value()) {
             locking();
         }
     }
@@ -1078,8 +1076,8 @@ void OnNewParams(void)
     WLM_PORT.Update();
     WLM_CH.Update();
     EXP_UP.Update();
-    EXP_AUTO.Update();
     EXP_DOWN.Update();
+    EXP_AUTO.Update();
     TARGET_FREQUENCY.Update();
     SET_REF.Update();
 
@@ -1171,10 +1169,6 @@ void OnNewParams(void)
         set_reference();
         SET_REF.Set(false);
     }
-
-    // if(prev_ch != WLM_CH.Value()) {
-    //     ch = WLM_CH.Value();
-    // }
 }
 
 void OnNewSignals(void){}

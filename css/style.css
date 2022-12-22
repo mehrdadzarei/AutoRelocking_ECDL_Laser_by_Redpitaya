@@ -143,6 +143,11 @@ body {
     color: #ee3739;
 }
 
+#graph_info {
+    margin-top: -20px; 
+    margin-bottom: 10px;
+}
+
 #graphs_holder {
     margin-right: 5px;
     padding-top: 0px;
