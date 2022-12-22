@@ -355,17 +355,20 @@
             curN.value = curVal;
         }
 
-        // var exp_up_val = new_params['EXP_UP'].value;
-        // if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
+        if($('#exp_auto').is(':checked')) {
 
-        //     exp_up.value = exp_up_val;
-        // }
+            var exp_up_val = new_params['EXP_UP'].value;
+            if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
 
-        // var exp_down_val = new_params['EXP_DOWN'].value;
-        // if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+                exp_up.value = exp_up_val;
+            }
 
-        //     exp_down.value = exp_down_val;
-        // }
+            var exp_down_val = new_params['EXP_DOWN'].value;
+            if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+
+                exp_down.value = exp_down_val;
+            }
+        }
 
         // var exp_auto_val = new_params['EXP_AUTO'].value;
         // if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != $('#exp_auto').is(':checked')) {
@@ -398,11 +401,11 @@
         
         var wavel_val = new_params['WAVELENGTH'].value;
         if('WAVELENGTH' in new_params && wavel_val != undefined) {
-            wavel_txt.innerHTML = "Wavelength [nm]: ".concat(" ", wavel_val.toFixed(5));
+            wavel_txt.innerHTML = "Wavelength [nm]: ".concat(" ", wavel_val);
         }
         var freq_val = new_params['FREQUENCY'].value;
         if('FREQUENCY' in new_params && freq_val != undefined) {
-            freq_txt.innerHTML = "Frequency [THz]: ".concat(" ", freq_val.toFixed(5));
+            freq_txt.innerHTML = "Frequency [THz]: ".concat(" ", freq_val);
         }
         var mean_ch1_val = new_params['MEAN_CH1'].value;
         if('MEAN_CH1' in new_params && mean_ch1_val != undefined) {
@@ -749,6 +752,7 @@
         var ch2_out_min = document.getElementById("ch2_out_min");
         
         var tran_lvl = document.getElementById("tran_lvl");
+        var target = document.getElementById("target");
         
         var pzSl = document.getElementById("piezo");
         var pzN = document.getElementById("piezoN");
@@ -759,7 +763,7 @@
         var port = document.getElementById("port");
         var exp_up = document.getElementById("exp_up");
         var exp_down = document.getElementById("exp_down");
-        var target = document.getElementById("target");
+
         const targ_freq_txt = document.getElementById("targ_freq")
 
         if($.cookie('AUTO_LOCK') === undefined) {
@@ -929,6 +933,14 @@
             }
         }
 
+        if($.cookie('TRANS_LVL') === undefined) {
+            APP.params.local['TRANS_LVL'] = { value: 0 };
+            tran_lvl.value = 0.0;
+        } else {
+            APP.params.local['TRANS_LVL'] = { value: $.cookie('TRANS_LVL') };
+            tran_lvl.value = $.cookie('TRANS_LVL');
+        }
+
         if($.cookie('WLM_LOCK') === undefined) {
             $("#wlm_lock").attr("checked", false);
             APP.params.local['WLM_LOCK'] = { value: false };
@@ -940,6 +952,14 @@
                 $("#wlm_lock").attr("checked", false);
                 APP.params.local['WLM_LOCK'] = { value: false };
             }
+        }
+
+        if($.cookie('TARGET_FREQUENCY') === undefined) {
+            APP.params.local['TARGET_FREQUENCY'] = { value: 473.39686 };
+            target.value = 473.39686;
+        } else {
+            APP.params.local['TARGET_FREQUENCY'] = { value: $.cookie('TARGET_FREQUENCY') };
+            target.value = $.cookie('TARGET_FREQUENCY');
         }
 
         if($.cookie('PIEZO_FEED') === undefined) {
@@ -968,12 +988,17 @@
             }
         }
 
-        if($.cookie('TRANS_LVL') === undefined) {
-            APP.params.local['TRANS_LVL'] = { value: 0 };
-            tran_lvl.value = 0.0;
+        if($.cookie('TRANSFER_LOCK') === undefined) {
+            $("#transfer_lock").attr("checked", false);
+            APP.params.local['TRANSFER_LOCK'] = { value: false };
         } else {
-            APP.params.local['TRANS_LVL'] = { value: $.cookie('TRANS_LVL') };
-            tran_lvl.value = $.cookie('TRANS_LVL');
+            if($.cookie('TRANSFER_LOCK') == 'true') {
+                $("#transfer_lock").attr("checked", true);
+                APP.params.local['TRANSFER_LOCK'] = { value: true };
+            }else {
+                $("#transfer_lock").attr("checked", false);
+                APP.params.local['TRANSFER_LOCK'] = { value: false };
+            }
         }
 
         if($.cookie('WLM_IP') === undefined) {
@@ -1029,13 +1054,6 @@
             }
         }
 
-        if($.cookie('TARGET_FREQUENCY') === undefined) {
-            APP.params.local['TARGET_FREQUENCY'] = { value: 473.39686 };
-            target.value = 473.39686;
-        } else {
-            APP.params.local['TARGET_FREQUENCY'] = { value: $.cookie('TARGET_FREQUENCY') };
-            target.value = $.cookie('TARGET_FREQUENCY');
-        }
         let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
         targ_freq_txt.innerHTML = txt.concat(" ", target.value);
 
@@ -1083,6 +1101,7 @@ $(function() {
     var ch2_out_min = document.getElementById("ch2_out_min");
     
     var tran_lvl = document.getElementById("tran_lvl");
+    var target = document.getElementById("target");
     
     var pzSl = document.getElementById("piezo");
     var pzN = document.getElementById("piezoN");
@@ -1093,7 +1112,7 @@ $(function() {
     var port = document.getElementById("port");
     var exp_up = document.getElementById("exp_up");
     var exp_down = document.getElementById("exp_down");
-    var target = document.getElementById("target");
+
     const targ_freq_txt = document.getElementById("targ_freq")
     
 
@@ -1378,12 +1397,41 @@ $(function() {
         APP.params.local = {};
     });
 
+    tran_lvl.onchange = function() {
+        
+        this.value = this.value > 20 ? this.max : this.value;
+        this.value = this.value < -20 ? this.min : this.value;
+
+        $.cookie('TRANS_LVL', this.value);
+        APP.params.local['TRANS_LVL'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    }
+
     $("#wlm_lock").click(function() {
 
         var checkBox = $(this).is(':checked');
         $.cookie('WLM_LOCK', checkBox);
         
         APP.params.local['WLM_LOCK'] = { value: checkBox };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
+
+    target.onchange = function() {
+        
+        var val = this.value;
+        let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
+        targ_freq_txt.innerHTML = txt.concat(" ", val);
+        $.cookie('TARGET_FREQUENCY', this.value);
+        APP.params.local['TARGET_FREQUENCY'] = { value: this.value };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    }
+
+    $("#set_ref").click(function() {
+        
+        APP.params.local['SET_REF'] = { value: true };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     });
@@ -1408,16 +1456,15 @@ $(function() {
         APP.params.local = {};
     });
 
-    tran_lvl.onchange = function() {
-        
-        this.value = this.value > 20 ? this.max : this.value;
-        this.value = this.value < -20 ? this.min : this.value;
+    $("#transfer_lock").click(function() {
 
-        $.cookie('TRANS_LVL', this.value);
-        APP.params.local['TRANS_LVL'] = { value: this.value };
+        var checkBox = $(this).is(':checked');
+        $.cookie('TRANSFER_LOCK', checkBox);
+        
+        APP.params.local['TRANSFER_LOCK'] = { value: checkBox };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
-    }
+    });
 
     pzSl.oninput = function() {
         
@@ -1513,24 +1560,6 @@ $(function() {
         $.cookie('EXP_AUTO', checkBox);
         
         APP.params.local['EXP_AUTO'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
-    });
-
-    target.onchange = function() {
-        
-        var val = this.value;
-        let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
-        targ_freq_txt.innerHTML = txt.concat(" ", val);
-        $.cookie('TARGET_FREQUENCY', this.value);
-        APP.params.local['TARGET_FREQUENCY'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
-    }
-
-    $("#set_ref").click(function() {
-        
-        APP.params.local['SET_REF'] = { value: true };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     });
@@ -1632,10 +1661,12 @@ $(function() {
         $.cookie('CH2_OUT_MIN', ch2_out_min.value);
 
         $.cookie('CAV_LOCK', $('#cavity_lock').is(':checked'));
+        $.cookie('TRANS_LVL', tran_lvl.value);
         $.cookie('WLM_LOCK', $('#wlm_lock').is(':checked'));
+        $.cookie('TARGET_FREQUENCY', target.value);
         $.cookie('PIEZO_FEED', $('#piezo_lock').is(':checked'));
         $.cookie('CUR_FEED', $('#curr_lock').is(':checked'));
-        $.cookie('TRANS_LVL', tran_lvl.value);
+        $.cookie('TRANSFER_LOCK', $('#transfer_lock').is(':checked'));
 
         $.cookie('CH1_OUT_OFFSET', pzSl.value);
         $.cookie('CH2_OUT_OFFSET', curSl.value);
@@ -1646,7 +1677,6 @@ $(function() {
         $.cookie('EXP_UP', exp_up.value);
         $.cookie('EXP_DOWN', exp_down.value);
         $.cookie('EXP_AUTO', $('#exp_auto').is(':checked'));
-        $.cookie('TARGET_FREQUENCY', target.value);
         
         APP.unexpectedClose = false;
     });

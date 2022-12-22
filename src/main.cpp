@@ -74,9 +74,10 @@ float output_amp2 = 1;          // by default for Redpitaya is +- 1 v which is e
 float output_shift2 = 0;         // by default is zero
 float cur_last_value = 0;
 int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new value for piezo
+float freq = 0;
 float trg_freq = 0;
 float freq_diff = 0;
-const float std_freq_diff = 0.00003;
+const float std_freq_diff = 0.00001;
 const int distance_thr = 20;                // find peak in spectrum in this distance
 float hight_thr = 1000;                // find peak in spectrum above this hight
 int trg_no_peaks = 0;
@@ -108,14 +109,15 @@ CFloatParameter CH2_OUT_MAX("CH2_OUT_MAX", CBaseParameter::RW, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_MIN("CH2_OUT_MIN", CBaseParameter::RW, 0, 0, -20, 20);
 
 CBooleanParameter CAV_LOCK("CAV_LOCK", CBaseParameter::RW, false, 0);
+CFloatParameter TRANS_LVL("TRANS_LVL", CBaseParameter::RW, 0, 0, -20, 20);
 CBooleanParameter WLM_LOCK("WLM_LOCK", CBaseParameter::RW, false, 0);
+CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 1000);
+CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
-CFloatParameter TRANS_LVL("TRANS_LVL", CBaseParameter::RW, 0, 0, -20, 20);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
-// CIntParameter WAVEFORM("WAVEFORM", CBaseParameter::RW, 1, 0, 0, 2);
 
 CBooleanParameter WLM_CON("WLM_CON", CBaseParameter::RWSA, true, 0);
 CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
@@ -123,14 +125,13 @@ CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
 CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
-CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RWSA, false, 0);
-CFloatParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, 0, 0, -10, 10000);
-CFloatParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, 0, 0, -10, 10000);
-CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 10000);
-CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
+CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RW, false, 0);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
 CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
+
+CStringParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, "0", 0);
+CStringParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, "0", 0);
 
 
 
@@ -249,6 +250,7 @@ int my_recv() {
     // int json_len;
     float data, ratio;
     int data_int;
+    char msg[200] = {};
     JSONNode data_array;
     JSONNode data_child;
 
@@ -266,6 +268,7 @@ int my_recv() {
             wlm_thread_running = false;
             return 0;
         }
+        
         strcat((char*)chunks, (char*)chunk);
         
         bytes_recvd += recvd;
@@ -308,26 +311,23 @@ int my_recv() {
 
             // json_len = obj.size();
 
-            // data_int = obj.at("EXP_UP").as_int();
-            // EXP_UP.Set(data_int);
+            if(EXP_AUTO.Value()) {
 
-            // data_int = obj.at("EXP_DOWN").as_int();
-            // EXP_DOWN.Set(data_int);
+                strcpy((char*)msg, (obj.at("EXP_UP").as_string()).c_str());
+                EXP_UP.Set(atoi((char*)msg));
 
-            // data_int = obj.at("EXP_AUTO").as_int();
-            // if(data_int == 1) {
-            //     EXP_AUTO.Set(true);
-            // } else {
-            //     EXP_AUTO.Set(false);
-            // }
+                strcpy((char*)msg, (obj.at("EXP_DOWN").as_string()).c_str());
+                EXP_DOWN.Set(atoi((char*)msg));
+            }
 
-            data = obj.at("WAVEL").as_float();
-            WAVELENGTH.Set(data);
+            WAVELENGTH.Set(obj.at("WAVEL").as_string());
 
-            data = obj.at("FREQ").as_float();
-            FREQUENCY.Set(data);
+            strcpy((char*)msg, (obj.at("FREQ").as_string()).c_str());
+            FREQUENCY.Set((char*)msg);
+            freq = atof((char*)msg);
 
-            ratio = obj.at("RATIO").as_float();
+            strcpy((char*)msg, (obj.at("RATIO").as_string()).c_str());
+            ratio = atof((char*)msg);
             data_array = obj.at("SPEC").as_array();
             len = data_array.size();
             
@@ -405,10 +405,11 @@ void set_reference() {
 void *wavemeter_thread(void *args) {
 
     wlm_thread_running = true;
-    char msg_send[100] = {};
+    char msg_send[200] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
+    bool new_ref = false;
     
     while(wlm_thread_running) {
         
@@ -429,7 +430,8 @@ void *wavemeter_thread(void *args) {
         
         if(WLM_LOCK.Value()) {
             
-            diff = fabs(trg_freq - FREQUENCY.Value());
+            diff = fabs(trg_freq - freq);
+            MEAN_CH2.Set(diff*100000);
             if(diff < 50) {
                 freq_diff = diff;
             }
@@ -438,6 +440,17 @@ void *wavemeter_thread(void *args) {
 
                 find_peaks(&no_peaks, &min_peak);
                 if(trg_no_peaks == 0) {
+                    
+                    // set exposure auto before taking reference
+                    if(!EXP_AUTO.Value()) {
+                        EXP_AUTO.Set(true);
+                        new_ref = true;
+                        continue;
+                    }
+                    if(new_ref) {
+                        EXP_AUTO.Set(false);
+                        new_ref = false;
+                    }
                     set_reference();
                 }
                 no_peaks_diff = abs(trg_no_peaks - no_peaks);
@@ -1166,6 +1179,11 @@ void OnNewParams(void)
     // set reference pattern
     if(SET_REF.Value()) {
 
+        if(!EXP_AUTO.Value()) {
+            EXP_AUTO.Set(true);
+            sleep(2);
+            EXP_AUTO.Set(false);
+        }
         set_reference();
         SET_REF.Set(false);
     }
