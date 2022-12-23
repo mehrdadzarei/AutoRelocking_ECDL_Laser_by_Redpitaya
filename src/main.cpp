@@ -126,6 +126,7 @@ CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
 CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
 CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RW, false, 0);
+CBooleanParameter SWITCH_MODE("SWITCH_MODE", CBaseParameter::RW, true, 0);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
 CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
@@ -142,7 +143,7 @@ int my_send(char msg[]) {
     int total_sent = 0;
     int sent = 1, recvd = 1;
     char* msg_len[100] = {};
-    char chunk[100] = {};
+    char chunk[1000] = {};
     char msg_recv[1] = {};
     
     MSGLEN = strlen(msg);
@@ -248,8 +249,7 @@ int my_recv() {
 
     JSONNode obj;
     // int json_len;
-    float data, ratio;
-    int data_int;
+    float ratio;
     char msg[200] = {};
     JSONNode data_array;
     JSONNode data_child;
@@ -405,7 +405,7 @@ void set_reference() {
 void *wavemeter_thread(void *args) {
 
     wlm_thread_running = true;
-    char msg_send[200] = {};
+    char msg_send[1000] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
@@ -416,8 +416,8 @@ void *wavemeter_thread(void *args) {
         memset(msg_send, 0, strlen(msg_send));
         
         sprintf((char*)msg_send, 
-                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), true, true, true);
+                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
+                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), true, true, true);
         
         msg_send[strlen(msg_send)] = '\0';
         if(my_send(msg_send) == 0) {
@@ -1082,10 +1082,12 @@ void OnNewParams(void)
     CH2_OUT_MIN.Update();
     
     CAV_LOCK.Update();
+    TRANS_LVL.Update();
     WLM_LOCK.Update();
+    TARGET_FREQUENCY.Update();
+    SET_REF.Update();
     PIEZO_FEED.Update();
     CUR_FEED.Update();
-    TRANS_LVL.Update();
     
     CH1_OUT_OFFSET.Update();
     CH2_OUT_OFFSET.Update();
@@ -1096,8 +1098,7 @@ void OnNewParams(void)
     EXP_UP.Update();
     EXP_DOWN.Update();
     EXP_AUTO.Update();
-    TARGET_FREQUENCY.Update();
-    SET_REF.Update();
+    SWITCH_MODE.Update();
 
     // Run or stop APP
     if(APP_RUN.Value() != appState) {

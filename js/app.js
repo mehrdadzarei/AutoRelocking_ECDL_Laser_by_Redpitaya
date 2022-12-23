@@ -1046,6 +1046,19 @@
             }
         }
 
+        if($.cookie('SWITCH_MODE') === undefined) {
+            $("#switch_mode").attr("checked", true);
+            APP.params.local['SWITCH_MODE'] = { value: true };
+        } else {
+            if($.cookie('SWITCH_MODE') == 'true') {
+                $("#switch_mode").attr("checked", true);
+                APP.params.local['SWITCH_MODE'] = { value: true };
+            }else {
+                $("#switch_mode").attr("checked", false);
+                APP.params.local['SWITCH_MODE'] = { value: false };
+            }
+        }
+
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     };
@@ -1550,6 +1563,16 @@ $(function() {
         APP.params.local = {};
     });
 
+    $("#switch_mode").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $.cookie('SWITCH_MODE', checkBox);
+        
+        APP.params.local['SWITCH_MODE'] = { value: checkBox };
+        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
+        APP.params.local = {};
+    });
+
     APP.drawGraphGrid();
     APP.drawSpecGraphGrid();
 
@@ -1662,6 +1685,7 @@ $(function() {
         $.cookie('EXP_UP', exp_up.value);
         $.cookie('EXP_DOWN', exp_down.value);
         $.cookie('EXP_AUTO', $('#exp_auto').is(':checked'));
+        $.cookie('SWITCH_MODE', $('#switch_mode').is(':checked'));
         
         APP.unexpectedClose = false;
     });
