@@ -74,10 +74,10 @@ float output_amp2 = 1;          // by default for Redpitaya is +- 1 v which is e
 float output_shift2 = 0;         // by default is zero
 float cur_last_value = 0;
 int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new value for piezo
-float freq = 0;
-float trg_freq = 0;
-float freq_diff = 0;
-const float std_freq_diff = 0.00001;
+double freq = 0;        // use double instead of float
+double trg_freq = 0;
+double freq_diff = 0;
+const double std_freq_diff = 0.000005;
 const int distance_thr = 20;                // find peak in spectrum in this distance
 float hight_thr = 1000;                // find peak in spectrum above this hight
 int trg_no_peaks = 0;
@@ -111,7 +111,7 @@ CFloatParameter CH2_OUT_MIN("CH2_OUT_MIN", CBaseParameter::RW, 0, 0, -20, 20);
 CBooleanParameter CAV_LOCK("CAV_LOCK", CBaseParameter::RW, false, 0);
 CFloatParameter TRANS_LVL("TRANS_LVL", CBaseParameter::RW, 0, 0, -20, 20);
 CBooleanParameter WLM_LOCK("WLM_LOCK", CBaseParameter::RW, false, 0);
-CFloatParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, 0, 0, -10, 1000);
+CBooleanParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, false, 0);
 CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
@@ -431,7 +431,6 @@ void *wavemeter_thread(void *args) {
         if(WLM_LOCK.Value()) {
             
             diff = fabs(trg_freq - freq);
-            MEAN_CH2.Set(diff*100000);
             if(diff < 50) {
                 freq_diff = diff;
             }
@@ -512,7 +511,7 @@ int scanning(float per = 0.2) {
     int len_right_scan = floor((max_scan - piezo_last_value) / piezo_step);
     int len_scan = floor((max_scan - min_scan) * 2 / piezo_step);
     float curr_val = 0.0;
-    float prev_freq_diff = freq_diff;
+    double prev_freq_diff = freq_diff;
 
     for(int i = 0; i < len_scan; i++) {
 
@@ -524,16 +523,13 @@ int scanning(float per = 0.2) {
                 break;
             } 
             
-            // wait for new information
-            sleep(1);
-            
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
                 if(transmision > trans_lev && freq_diff < std_freq_diff){
                     break;
                 }
             } else if (transmision > trans_lev && CAV_LOCK.Value()) {
-                break;
+                return 2;
             } else if (freq_diff < std_freq_diff && WLM_LOCK.Value()) {
                 break;
             }
@@ -542,13 +538,13 @@ int scanning(float per = 0.2) {
         if(freq_diff < std_freq_diff && per == 0.2 && WLM_LOCK.Value()) {                  // very good condition
             
             break;
-        } else if(freq_diff < std_freq_diff && per == 0.3 && WLM_LOCK.Value()) {           // very good condition
+        } else if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_LOCK.Value()) {           // very good condition
             
             break;
-        } else if(freq_diff < std_freq_diff * 2 && per == 0.5 && WLM_LOCK.Value()) {       // good condition
+        } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && WLM_LOCK.Value()) {       // good condition
             
             break;
-        } else if(freq_diff < std_freq_diff * 3 && per == 2.0 && WLM_LOCK.Value()) {       // bad condition
+        } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && WLM_LOCK.Value()) {       // bad condition
             
             break;
         }
@@ -644,17 +640,17 @@ void *piezo_scan_thread(void *args) {
         if(WLM_LOCK.Value()) {
 
             max_no_scan = 5;
-            if(freq_diff < std_freq_diff) {                 // very good condition
+            if(freq_diff < std_freq_diff * 2) {                 // very good condition
 
-                piezo_delay = 10000;     // us
+                piezo_delay = 15000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
-            } else if(freq_diff < std_freq_diff * 2) {      // good condition
+            } else if(freq_diff < std_freq_diff * 4) {      // good condition
 
                 piezo_delay = 9000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
-            } else if(freq_diff < std_freq_diff * 3) {      // bad condition
+            } else if(freq_diff < std_freq_diff * 6) {      // bad condition
 
                 piezo_delay = 7000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
@@ -676,25 +672,31 @@ void *piezo_scan_thread(void *args) {
                 rng_scan = 2;
             } else if (rng_scan == 2) {
                 
-                piezo_delay = 15000;     // us
+                piezo_delay = 9000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
                 rng_scan = 3;
             } else if (rng_scan == 3) {
                 
-                piezo_delay = 15000;     // us
+                piezo_delay = 5000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
                 rng_scan = 4;
             } else {
                 
-                piezo_delay = 15000;     // us
+                piezo_delay = 5000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(rng_scan);
                 rng_scan = 1;
                 no_scan += 1;
             }
-        }// sleep(1);
+
+            if(repeat == 2) {
+                rng_scan = 1;
+                repeat = 1;
+                sleep(1);
+            }
+        }
     }
 
     scan_thread_running = false;
@@ -713,7 +715,10 @@ void locking() {
     
             lev++;
             if(lev > 100 || freq_diff > std_freq_diff) {
-                pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
+                
+                if(PIEZO_FEED.Value()) {
+                    pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
+                }
                 lev = 0;
             }
         } else {
@@ -1174,7 +1179,10 @@ void OnNewParams(void)
         cur_last_value = CH2_OUT_OFFSET.Value();
     }
 
-    trg_freq = TARGET_FREQUENCY.Value();
+    if(TARGET_FREQUENCY.Value()) {
+        TARGET_FREQUENCY.Set(false);
+        trg_freq = freq;
+    }
 
     // set reference pattern
     if(SET_REF.Value()) {
