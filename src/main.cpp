@@ -110,7 +110,7 @@ CFloatParameter CH2_OUT_MIN("CH2_OUT_MIN", CBaseParameter::RW, 0, 0, -20, 20);
 
 CBooleanParameter CAV_LOCK("CAV_LOCK", CBaseParameter::RW, false, 0);
 CFloatParameter TRANS_LVL("TRANS_LVL", CBaseParameter::RW, 0, 0, -20, 20);
-CBooleanParameter WLM_LOCK("WLM_LOCK", CBaseParameter::RW, false, 0);
+CBooleanParameter WLM_LOCK("WLM_LOCK", CBaseParameter::RWSA, false, 0);
 CBooleanParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, false, 0);
 CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
@@ -705,6 +705,11 @@ void *piezo_scan_thread(void *args) {
 }
 
 void locking() {
+
+    // don't effect if target frequency is not set
+    if(trg_freq < 1 && WLM_LOCK.Value()) {
+        WLM_LOCK.Set(false);
+    }
 
     if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
             

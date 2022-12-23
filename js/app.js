@@ -325,6 +325,7 @@
         const wavel_txt = document.getElementById("wavel");
         const freq_txt = document.getElementById("freq");
         
+        const trg_msg = document.getElementById("trg_msg");
         const graph_msg = document.getElementById("graph_msg");
         const mean_ch1_txt = document.getElementById("mean_ch1");
         const mean_ch2_txt = document.getElementById("mean_ch2");
@@ -370,11 +371,13 @@
             }
         }
 
-        // var exp_auto_val = new_params['EXP_AUTO'].value;
-        // if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != $('#exp_auto').is(':checked')) {
+        var wlm_lock_val = new_params['WLM_LOCK'].value;
+        if(APP.running && 'WLM_LOCK' in new_params && wlm_lock_val != undefined && 
+            wlm_lock_val != $('#wlm_lock').is(':checked')) {
 
-        //     $("#exp_auto").attr("checked", exp_auto_val);
-        // }
+            $("#wlm_lock").attr("checked", wlm_lock_val);
+            trg_msg.style.display = "block";
+        }
 
         if(APP.running) {
             
@@ -1114,6 +1117,7 @@ $(function() {
     var exp_up = document.getElementById("exp_up");
     var exp_down = document.getElementById("exp_down");
 
+    const trg_msg = document.getElementById("trg_msg");
     const targ_freq_txt = document.getElementById("targ_freq")
     
 
@@ -1131,10 +1135,13 @@ $(function() {
     });
 
     $("#auto_lock").click(function() {
+        
         $(this).hide();
         $("#man_lock").css('display', 'block');
         pzSl.disabled = true;
         pzN.disabled = true;
+        trg_msg.style.display = "none";
+        
         $.cookie('AUTO_LOCK', true);
         APP.params.local['AUTO_LOCK'] = { value: true };
         APP.params.orig['AUTO_LOCK'] = { value: true };
@@ -1413,6 +1420,7 @@ $(function() {
 
         var checkBox = $(this).is(':checked');
         $.cookie('WLM_LOCK', checkBox);
+        trg_msg.style.display = "none";
         
         APP.params.local['WLM_LOCK'] = { value: checkBox };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
@@ -1421,6 +1429,8 @@ $(function() {
 
     $("#target").click(function() {
         
+        trg_msg.style.display = "none";
+
         let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
         targ_freq_txt.innerHTML = txt.concat(" ", APP.params.orig['FREQ'].value);
         APP.params.local['TARGET_FREQUENCY'] = { value: true };
