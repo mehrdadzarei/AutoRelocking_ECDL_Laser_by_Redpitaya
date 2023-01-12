@@ -321,7 +321,7 @@
         var exp_up = document.getElementById("exp_up");
         var exp_down = document.getElementById("exp_down");
 
-        const wlm_msg = document.getElementById("wlm_msg");
+        const server_msg = document.getElementById("server_msg");
         const wavel_txt = document.getElementById("wavel");
         const freq_txt = document.getElementById("freq");
         
@@ -387,13 +387,13 @@
 
         if(APP.running) {
             
-            var wlm_state = new_params['WLM_CON'].value;
-            if(wlm_state) {
-                wlm_msg.style.display = "none";
-                // wlm_msg.innerHTML = "Connected!";
+            var server_state = new_params['SERVER_CON'].value;
+            if(server_state) {
+                server_msg.style.display = "none";
+                // server_msg.innerHTML = "Connected!";
             } else { 
-                wlm_msg.style.display = "block";
-                // wlm_msg.innerHTML = "Wavemeter is not Connected!";
+                server_msg.style.display = "block";
+                // server_msg.innerHTML = "Wavemeter is not Connected!";
             }  
             
             var lock_state = new_params['LOCK_STATE'].value;
@@ -404,7 +404,7 @@
                 $("#man_lock").click();
             }
         }else {
-            wlm_msg.style.display = "none";
+            server_msg.style.display = "none";
             graph_msg.style.display = "none";
         }
         
@@ -548,7 +548,7 @@
             return false;
         }
         // if (!disable_defCur) APP.setDefCursorVals();
-        console.log(APP.params.local)
+        // console.log(APP.params.local);
         APP.params.local['in_command'] = { value: 'send_all_params' };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
@@ -802,6 +802,29 @@
                 curN.disabled = false;
                 APP.params.local['AUTO_LOCK'] = { value: false };
                 APP.params.orig['AUTO_LOCK'] = { value: false };
+            }
+        }
+
+        if($.cookie('WLM_RUN') === undefined) {
+            $("#WLM_RUN").css('display', 'block');
+            $("#WLM_STOP").hide();
+            $("#server_info").css('display', 'none');
+            APP.params.local['WLM_RUN'] = { value: false };
+            APP.params.orig['WLM_RUN'] = { value: false };
+        } else {
+            if($.cookie('WLM_RUN') === "true") {
+
+                $("#WLM_RUN").hide();
+                $("#WLM_STOP").css('display', 'block');
+                $("#server_info").css('display', 'block');
+                APP.params.local['WLM_RUN'] = { value: true };
+                APP.params.orig['WLM_RUN'] = { value: true };
+            } else {
+                $("#WLM_RUN").css('display', 'block');
+                $("#WLM_STOP").hide();
+                $("#server_info").css('display', 'none');
+                APP.params.local['WLM_RUN'] = { value: false };
+                APP.params.orig['WLM_RUN'] = { value: false };
             }
         }
         
@@ -1134,8 +1157,24 @@ $(function() {
         }
     });
 
-    $("#AUTO_SCALE").click(function() {
-        
+    $("#WLM_RUN").click(function() {
+        $(this).hide();
+        $("#WLM_STOP").css('display', 'block');
+        $("#server_info").css('display', 'block');
+        $.cookie('WLM_RUN', true);
+        APP.params.orig['WLM_RUN'] = { value: true };
+        APP.params.local['WLM_RUN'] = { value: true };
+        APP.sendParams();
+    });
+
+    $("#WLM_STOP").click(function() {
+        $(this).hide();
+        $("#WLM_RUN").css('display', 'block');
+        $("#server_info").css('display', 'none');
+        $.cookie('WLM_RUN', false);
+        APP.params.orig['WLM_RUN'] = { value: false };
+        APP.params.local['WLM_RUN'] = { value: false };
+        APP.sendParams();
     });
 
     $("#auto_lock").click(function() {
@@ -1149,8 +1188,7 @@ $(function() {
         $.cookie('AUTO_LOCK', true);
         APP.params.local['AUTO_LOCK'] = { value: true };
         APP.params.orig['AUTO_LOCK'] = { value: true };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#man_lock").click(function() {
@@ -1161,8 +1199,7 @@ $(function() {
         $.cookie('AUTO_LOCK', false);
         APP.params.local['AUTO_LOCK'] = { value: false };
         APP.params.orig['AUTO_LOCK'] = { value: false };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#APP_RUN").click(function() {
@@ -1192,8 +1229,7 @@ $(function() {
         btn.data('checked', checked).toggleClass('btn-default btn-primary');
         $.cookie('CH1_IN_SHOW', checked);
         APP.params.local['CH1_IN_SHOW'] = { value: checked };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#CH2_IN_SHOW").click(function() {
@@ -1204,8 +1240,7 @@ $(function() {
         btn.data('checked', checked).toggleClass('btn-default btn-primary');
         $.cookie('CH2_IN_SHOW', checked);
         APP.params.local['CH2_IN_SHOW'] = { value: checked };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#x_zoomin").click(function() {
@@ -1226,7 +1261,6 @@ $(function() {
             APP.params.local['TIME_SCALE'] = { value: new_scale };
             APP.params.orig['TIME_SCALE'] = { value: new_scale };
             APP.sendParams();
-            APP.params.local = {};
             $.cookie('TIME_SCALE', new_scale);
         }
     });
@@ -1249,7 +1283,6 @@ $(function() {
             APP.params.local['TIME_SCALE'] = { value: new_scale };
             APP.params.orig['TIME_SCALE'] = { value: new_scale };
             APP.sendParams();
-            APP.params.local = {};
             $.cookie('TIME_SCALE', new_scale);
         }
     });
@@ -1274,8 +1307,7 @@ $(function() {
             $.cookie('VOLT_SCALE', new_scale);
             APP.redraw_graph();
             console.log(new_scale);
-            APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-            APP.params.local = {};
+            APP.sendParams();
         }
     });
 
@@ -1299,8 +1331,7 @@ $(function() {
             $.cookie('VOLT_SCALE', new_scale);
             APP.redraw_graph();
             console.log(new_scale);
-            APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-            APP.params.local = {};
+            APP.sendParams();
         }
     });
 
@@ -1312,8 +1343,7 @@ $(function() {
         }else {
             APP.params.local['CH1_IN_PROBE'] = { value: 1 };   // 1x
         }
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#CH1_IN_GAIN").change(function() {
@@ -1323,8 +1353,8 @@ $(function() {
             APP.params.local['CH1_IN_GAIN'] = { value: true };   // HV
         }else {
             APP.params.local['CH1_IN_GAIN'] = { value: false };     // LV
-        }APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        }
+        APP.sendParams();
     });
 
     $("#CH2_IN_PROBE").change(function() {
@@ -1335,8 +1365,7 @@ $(function() {
         }else {
             APP.params.local['CH2_IN_PROBE'] = { value: 1 };    // 1x
         }
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#CH2_IN_GAIN").change(function() {
@@ -1347,8 +1376,7 @@ $(function() {
         }else {
             APP.params.local['CH2_IN_GAIN'] = { value: false };     // LV
         }
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     ch1_out_max.onchange = function() {
@@ -1359,8 +1387,7 @@ $(function() {
 
         $.cookie('CH1_OUT_MAX', this.value);
         APP.params.local['CH1_OUT_MAX'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     ch1_out_min.onchange = function() {
@@ -1371,8 +1398,7 @@ $(function() {
 
         $.cookie('CH1_OUT_MIN', this.value);
         APP.params.local['CH1_OUT_MIN'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     ch2_out_max.onchange = function() {
@@ -1383,8 +1409,7 @@ $(function() {
 
         $.cookie('CH2_OUT_MAX', this.value);
         APP.params.local['CH2_OUT_MAX'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     ch2_out_min.onchange = function() {
@@ -1395,8 +1420,7 @@ $(function() {
 
         $.cookie('CH2_OUT_MIN', this.value);
         APP.params.local['CH2_OUT_MIN'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     $("#cavity_lock").click(function() {
@@ -1405,8 +1429,7 @@ $(function() {
         $.cookie('CAV_LOCK', checkBox);
         
         APP.params.local['CAV_LOCK'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     tran_lvl.onchange = function() {
@@ -1416,8 +1439,7 @@ $(function() {
 
         $.cookie('TRANS_LVL', this.value);
         APP.params.local['TRANS_LVL'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     $("#wlm_lock").click(function() {
@@ -1427,8 +1449,7 @@ $(function() {
         trg_msg.style.display = "none";
         
         APP.params.local['WLM_LOCK'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#target").click(function() {
@@ -1439,15 +1460,13 @@ $(function() {
         targ_freq_txt.innerHTML = txt.concat(" ", APP.params.orig['FREQ'].value);
         $.cookie('TARGET_FREQUENCY', APP.params.orig['FREQ'].value);
         APP.params.local['TARGET_FREQUENCY'] = { value: true };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#set_ref").click(function() {
         
         APP.params.local['SET_REF'] = { value: true };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#piezo_lock").click(function() {
@@ -1456,8 +1475,7 @@ $(function() {
         $.cookie('PIEZO_FEED', checkBox);
         
         APP.params.local['PIEZO_FEED'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#curr_lock").click(function() {
@@ -1466,8 +1484,7 @@ $(function() {
         $.cookie('CUR_FEED', checkBox);
         
         APP.params.local['CUR_FEED'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#transfer_lock").click(function() {
@@ -1476,8 +1493,7 @@ $(function() {
         $.cookie('TRANSFER_LOCK', checkBox);
         
         APP.params.local['TRANSFER_LOCK'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     pzSl.oninput = function() {
@@ -1485,8 +1501,7 @@ $(function() {
         pzN.value = this.value;
         $.cookie('CH1_OUT_OFFSET', this.value);
         APP.params.local['CH1_OUT_OFFSET'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     pzN.oninput = function() {
@@ -1497,8 +1512,7 @@ $(function() {
 
         $.cookie('CH1_OUT_OFFSET', this.value);
         APP.params.local['CH1_OUT_OFFSET'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     curSl.oninput = function() {
@@ -1506,8 +1520,7 @@ $(function() {
         curN.value = this.value;
         $.cookie('CH2_OUT_OFFSET', this.value);
         APP.params.local['CH2_OUT_OFFSET'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     curN.oninput = function() {
@@ -1518,32 +1531,28 @@ $(function() {
 
         $.cookie('CH2_OUT_OFFSET', this.value);
         APP.params.local['CH2_OUT_OFFSET'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     ip.onchange = function() {
         
         $.cookie('WLM_IP', this.value);
         APP.params.local['WLM_IP'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     port.onchange = function() {
         
         $.cookie('WLM_PORT', this.value);
         APP.params.local['WLM_PORT'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     $("#WLM_CH").change(function() {
         var val = $(this).children("option:selected").val();
         $.cookie('WLM_CH', val);
         APP.params.local['WLM_CH'] = { value: val };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     exp_up.oninput = function() {
@@ -1553,8 +1562,7 @@ $(function() {
 
         $.cookie('EXP_UP', this.value);
         APP.params.local['EXP_UP'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     exp_down.oninput = function() {
@@ -1564,8 +1572,7 @@ $(function() {
 
         $.cookie('EXP_DOWN', this.value);
         APP.params.local['EXP_DOWN'] = { value: this.value };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     }
 
     $("#exp_auto").click(function() {
@@ -1574,8 +1581,7 @@ $(function() {
         $.cookie('EXP_AUTO', checkBox);
         
         APP.params.local['EXP_AUTO'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     $("#switch_mode").click(function() {
@@ -1584,8 +1590,7 @@ $(function() {
         $.cookie('SWITCH_MODE', checkBox);
         
         APP.params.local['SWITCH_MODE'] = { value: checkBox };
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     });
 
     APP.drawGraphGrid();
@@ -1639,6 +1644,7 @@ $(function() {
         }
 
         $.cookie('AUTO_LOCK', APP.params.orig['AUTO_LOCK'].value);
+        $.cookie('WLM_RUN', APP.params.orig['WLM_RUN'].value);
 
         if($("#CH1_IN_SHOW").data('checked')) {
             $.cookie('CH1_IN_SHOW', "true");

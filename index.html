@@ -68,31 +68,32 @@
                 <div class="container">
 
                     <div class="navbar-header">
+                        <a class="navbar-brand", href="/">
+                            <img class="back-btn", src="../assets/images/navigation_arrow_left.png">
+                        </a>
+                        <img class="logo", width="110", src="../assets/images/navigation_logo.png">
+                        <h1 class="nav-name">Auto Relocking ECDLs</h1>
                         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
                             <span class="sr-only">T</span>
                             <span class="icon-bar"></span>
                             <span class="icon-bar"></span>
                             <span class="icon-bar"></span>
                         </button>
-                        <a class="navbar-brand", href="/">
-                            <img class="back-btn", src="../assets/images/navigation_arrow_left.png">
-                        </a>
-                        <img class="logo", width="110", src="../assets/images/navigation_logo.png">
-                        <h1 class="nav-name">Auto Relocking ECDL Laser</h1>
                     </div>
 
                     <div class="collapse navbar-collapse">
                         <ul class="nav navbar-nav">
                             <li>
-                                <a id="AUTO_SCALE" href="#">Auto Scale</a>
+                                <a id="WLM_RUN" href="#" style="width: 175px;">Run Wavemeter</a>
+                                <a id="WLM_STOP" href="#" style="display:none; width: 175px;">Stop Wavemeter</a>
                             </li>
                             <li>
-                                <a id="auto_lock" href="#" style="">Auto Lock</a>
-                                <a id="man_lock" href="#" style="display:none;">Manual Lock</a>
+                                <a id="auto_lock" href="#" style="width: 145px;">Auto Lock</a>
+                                <a id="man_lock" href="#" style="display:none; width: 145px;">Manual Lock</a>
                             </li>
                             <li>
-                                <a id="APP_RUN" href="#" style="">RUN</a>
-                                <a id="APP_STOP" href="#" style="display:none;">STOP</a>
+                                <a id="APP_RUN" href="#" style="width: 100px;">RUN</a>
+                                <a id="APP_STOP" href="#" style="display:none; width: 100px;">STOP</a>
                             </li>
                         </ul>
                     </div>
@@ -357,8 +358,8 @@
                             </div>
                         </div>
                         <div id="info">
-                            <div id="wlm_info">
-                                <h2 id="wlm_msg" style="display:none; color: rgb(189, 79, 79);">Wavemeter is not Connected! </h2>
+                            <div id="server_info" style="display:none;">
+                                <h2 id="server_msg" style="display:none; color: rgb(189, 79, 79);">Server is not Connected! </h2>
                                 <h2 id="wavel">Wavelength [nm]: </h2>
                                 <h2 id="freq">Frequency [THz]: </h2>
                                 <h2 id="targ_freq">Target [THz]: &emsp;&ensp;&nbsp; 0</h2>

@@ -32,6 +32,7 @@ we have to define the function before specific function or declared here
 */ 
 void send_out_gen1(float val);
 void send_out_gen2(float val);
+int connect_server();
 
 #define SIGNAL_SIZE_DEFAULT      1024
 #define SIGNAL_UPDATE_INTERVAL      1   // ms
@@ -46,7 +47,7 @@ void send_out_gen2(float val);
 
 pthread_t thread_handler[NUM_THREADS];
 bool scan_thread_running = false;
-bool wlm_thread_running = false;
+bool server_thread_running = false;
 int sock, client;
 struct sockaddr_in address;
 int ch = 1;
@@ -93,7 +94,7 @@ CFloatSignal spectrum_data("spectrum_data", SIGNAL_SIZE_DEFAULT, 0.0f);
 CBooleanParameter APP_RUN("APP_RUN", CBaseParameter::RW, false, 0);
 CBooleanParameter AUTO_LOCK("AUTO_LOCK", CBaseParameter::RW, false, 0);
 CBooleanParameter LOCK_STATE("LOCK_STATE", CBaseParameter::RWSA, true, 0);
-CBooleanParameter AUTO_SCALE("AUTO_SCALE", CBaseParameter::RW, false, 0);
+CBooleanParameter WLM_RUN("WLM_RUN", CBaseParameter::RW, false, 0);
 
 CFloatParameter TIME_SCALE("TIME_SCALE", CBaseParameter::RWSA, 0.1, 0, 0, 1000);
 CFloatParameter VOLT_SCALE("VOLT_SCALE", CBaseParameter::RWSA, 0.1, 0, 0, 10);
@@ -119,7 +120,7 @@ CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 
-CBooleanParameter WLM_CON("WLM_CON", CBaseParameter::RWSA, true, 0);
+CBooleanParameter SERVER_CON("SERVER_CON", CBaseParameter::RWSA, true, 0);
 CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
 CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
@@ -157,7 +158,7 @@ int my_send(char msg[]) {
 
         recvd = recv(sock, (char*)msg_recv, 1, 0);
         if(recvd <= 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         if(atoi(msg_recv) == 1){
@@ -177,7 +178,7 @@ int my_send(char msg[]) {
         sent = send(sock, (char*)chunk, len, 0);
         
         if(sent == 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         total_sent += sent;
@@ -189,7 +190,7 @@ int my_send(char msg[]) {
 
         recvd = recv(sock, (char*)msg_recv, 1, 0);
         if(recvd <= 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         if(atoi(msg_recv) == 1){
@@ -209,7 +210,7 @@ int my_send(char msg[]) {
         sent = send(sock, (char*)chunk, len, 0);
         
         if(sent == 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         total_sent += sent;
@@ -221,7 +222,7 @@ int my_send(char msg[]) {
 
         recvd = recv(sock, (char*)msg_recv, 1, 0);
         if(recvd <= 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         if(atoi(msg_recv) == 1){
@@ -265,7 +266,7 @@ int my_recv() {
         recvd = recv(sock, (char*)chunk, MIN(HEADER - bytes_recvd, HEADER), 0);
         
         if(recvd <= 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         
@@ -296,7 +297,7 @@ int my_recv() {
         recvd = recv(sock, (char*)chunk, MIN(MSGLEN - bytes_recvd, 2048), 0);
         
         if(recvd <= 0) {
-            wlm_thread_running = false;
+            server_thread_running = false;
             return 0;
         }
         strcat((char*)chunks, (char*)chunk);
@@ -402,16 +403,21 @@ void set_reference() {
 }
 
 // thread for wavemeter
-void *wavemeter_thread(void *args) {
+void *server_thread(void *args) {
 
-    wlm_thread_running = true;
+    server_thread_running = true;
     char msg_send[1000] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
     bool new_ref = false;
+
+    if(connect_server() == 0) {
+        pthread_exit(NULL);
+        return 0;
+    }
     
-    while(wlm_thread_running) {
+    while(server_thread_running) {
         
         memset(msg_send, 0, strlen(msg_send));
         
@@ -469,18 +475,18 @@ void *wavemeter_thread(void *args) {
     msg_send[strlen(msg_send)] = '\0';
     my_send(msg_send);
     memset(msg_send, 0, strlen(msg_send));
-    wlm_thread_running = false;
-    WLM_CON.Set(false);
+    server_thread_running = false;
+    SERVER_CON.Set(false);
     // closing the connected socket
     shutdown(sock, SHUT_RDWR);
     close(client);
     pthread_exit(NULL);
 }
 
-// connect to the Wavemeter
-void connect_wlm() {
+// connect to the Server
+int connect_server() {
 
-    // start communication with wavemeter
+    // start communication with Server
     sock = socket(AF_INET, SOCK_STREAM, 0);
     address.sin_family = AF_INET;
     address.sin_port = htons(WLM_PORT.Value());
@@ -489,11 +495,16 @@ void connect_wlm() {
     client = connect(sock, (struct sockaddr *)&address, sizeof (address));
     
     if(client >= 0) {
-        WLM_CON.Set(true);
-        pthread_create(&thread_handler[0], NULL, wavemeter_thread, NULL);
+        SERVER_CON.Set(true);
+        // pthread_create(&thread_handler[0], NULL, server_thread, NULL);
     }else {
-        WLM_CON.Set(false);
+        SERVER_CON.Set(false);
+        server_thread_running = false;
+
+        return 0;
     }
+
+    return 1;
 }
 
 // scanning
@@ -893,8 +904,9 @@ void run_app() {
     get_decimation();
     set_acquir();
 
-    // connect to the wavemeter
-    connect_wlm();
+    // connect to the server
+    pthread_create(&thread_handler[0], NULL, server_thread, NULL);
+    // connect_server();
     
     appState = true;
 }
@@ -902,7 +914,7 @@ void run_app() {
 void stop_app() {
     
     scan_thread_running = false;
-    wlm_thread_running = false;
+    server_thread_running = false;
     appState = false;
     
     // stop acqusition
@@ -948,7 +960,7 @@ int rp_app_init(void)
 int rp_app_exit(void)
 {
     scan_thread_running = false;
-    wlm_thread_running = false;
+    server_thread_running = false;
     appState = false;
     
     fprintf(stderr, "Unloading Relocking ECDL application\n");
@@ -1071,7 +1083,7 @@ void OnNewParams(void)
     
     APP_RUN.Update();
     AUTO_LOCK.Update();
-    AUTO_SCALE.Update();
+    WLM_RUN.Update();
 
     TIME_SCALE.Update();
     VOLT_SCALE.Update();
