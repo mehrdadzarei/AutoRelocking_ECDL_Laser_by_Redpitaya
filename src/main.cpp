@@ -713,11 +713,10 @@ void locking() {
 
     if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
             
-        if(((transmision < trans_lev && CAV_LOCK.Value()) || 
-            (freq_diff > std_freq_diff && WLM_LOCK.Value()) ||
-            (no_peaks_diff > std_no_peaks_diff && WLM_LOCK.Value() && CUR_FEED.Value())) && 
-            !scan_thread_running) {
-    
+        if(!scan_thread_running && ((CAV_LOCK.Value() && transmision < trans_lev) || 
+            (WLM_LOCK.Value() && freq_diff > std_freq_diff) ||
+            (WLM_LOCK.Value() && CUR_FEED.Value() && no_peaks_diff > std_no_peaks_diff))) {
+
             lev++;
             if(lev > 100 || freq_diff > std_freq_diff) {
                 
@@ -770,6 +769,7 @@ void analyseData(int mul, int ch) {
         }
         locking();
     }
+
     memcpy(buff1_avg, n_b, buff_size);
     free(n_b);
 }

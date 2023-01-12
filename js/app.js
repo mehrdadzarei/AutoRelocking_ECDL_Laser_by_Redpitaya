@@ -376,6 +376,12 @@
             wlm_lock_val != $('#wlm_lock').is(':checked')) {
 
             $("#wlm_lock").attr("checked", wlm_lock_val);
+            
+            if($.cookie('TARGET_FREQUENCY') !== undefined) {
+
+                let txt = 'Target Frequency is NOT Set (last value was ';
+                trg_msg.innerHTML = txt.concat(" ", $.cookie('TARGET_FREQUENCY'), ")");
+            }
             trg_msg.style.display = "block";
         }
 
@@ -767,8 +773,6 @@
         var exp_up = document.getElementById("exp_up");
         var exp_down = document.getElementById("exp_down");
 
-        const targ_freq_txt = document.getElementById("targ_freq")
-
         if($.cookie('AUTO_LOCK') === undefined) {
             $("#auto_lock").css('display', 'block');
             $("#man_lock").hide();
@@ -1118,7 +1122,7 @@ $(function() {
     var exp_down = document.getElementById("exp_down");
 
     const trg_msg = document.getElementById("trg_msg");
-    const targ_freq_txt = document.getElementById("targ_freq")
+    const targ_freq_txt = document.getElementById("targ_freq");
     
 
     $("#mode").click(function() {
@@ -1431,8 +1435,9 @@ $(function() {
         
         trg_msg.style.display = "none";
 
-        let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;'
+        let txt = 'Target [THz]: ' + '&emsp;&ensp;&nbsp;';
         targ_freq_txt.innerHTML = txt.concat(" ", APP.params.orig['FREQ'].value);
+        $.cookie('TARGET_FREQUENCY', APP.params.orig['FREQ'].value);
         APP.params.local['TARGET_FREQUENCY'] = { value: true };
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
