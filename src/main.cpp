@@ -50,6 +50,7 @@ bool scan_thread_running = false;
 bool server_thread_running = false;
 int sock, client;
 struct sockaddr_in address;
+bool send_wlm_state = false;
 int ch = 1;
 float spec[2000] = {};
 
@@ -116,6 +117,7 @@ CBooleanParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, false
 CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
+CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RW, false, 0);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -312,30 +314,34 @@ int my_recv() {
 
             // json_len = obj.size();
 
-            if(EXP_AUTO.Value()) {
+            if(send_wlm_state) {
+                
+                if(EXP_AUTO.Value()) {
 
-                strcpy((char*)msg, (obj.at("EXP_UP").as_string()).c_str());
-                EXP_UP.Set(atoi((char*)msg));
+                    strcpy((char*)msg, (obj.at("EXP_UP").as_string()).c_str());
+                    EXP_UP.Set(atoi((char*)msg));
 
-                strcpy((char*)msg, (obj.at("EXP_DOWN").as_string()).c_str());
-                EXP_DOWN.Set(atoi((char*)msg));
-            }
+                    strcpy((char*)msg, (obj.at("EXP_DOWN").as_string()).c_str());
+                    EXP_DOWN.Set(atoi((char*)msg));
+                }
 
-            WAVELENGTH.Set(obj.at("WAVEL").as_string());
+                WAVELENGTH.Set(obj.at("WAVEL").as_string());
 
-            strcpy((char*)msg, (obj.at("FREQ").as_string()).c_str());
-            FREQUENCY.Set((char*)msg);
-            freq = atof((char*)msg);
+                strcpy((char*)msg, (obj.at("FREQ").as_string()).c_str());
+                FREQUENCY.Set((char*)msg);
+                freq = atof((char*)msg);
 
-            strcpy((char*)msg, (obj.at("RATIO").as_string()).c_str());
-            ratio = atof((char*)msg);
-            data_array = obj.at("SPEC").as_array();
-            len = data_array.size();
-            
-            for(int i = 0; i < len; i++) {
-            
-                data_child = data_array.at(i);
-                spec[i] = data_child.as_float() / ratio;
+                strcpy((char*)msg, (obj.at("RATIO").as_string()).c_str());
+                ratio = atof((char*)msg);
+                data_array = obj.at("SPEC").as_array();
+                len = data_array.size();
+
+                for(int i = 0; i < len; i++) {
+                
+                    data_child = data_array.at(i);
+                    spec[i] = data_child.as_float() / ratio;
+                }
+                send_wlm_state = false;
             }
         }
     }
@@ -407,6 +413,8 @@ void *server_thread(void *args) {
 
     server_thread_running = true;
     char msg_send[1000] = {};
+    char msg_send1[1000] = {};
+    char msg_send2[1000] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
@@ -420,11 +428,34 @@ void *server_thread(void *args) {
     while(server_thread_running) {
         
         memset(msg_send, 0, strlen(msg_send));
+        memset(msg_send1, 0, strlen(msg_send1));
+        memset(msg_send2, 0, strlen(msg_send2));
         
-        sprintf((char*)msg_send, 
-                "{\"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d}", 
-                WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), true, true, true);
+        // open the json {
+        msg_send[0] = '{';
+
+        if(WLM_RUN.Value()) {
+            sprintf((char*)msg_send1, 
+                "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
+                WLM_RUN.Value(), WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), true, true, true);
+
+                if(TRANSFER_LOCK.Value()) {
+                    msg_send1[strlen(msg_send1)] = ',';
+                    msg_send1[strlen(msg_send1)] = ' ';
+                }
+                send_wlm_state = true;
+        }
+
+        if(TRANSFER_LOCK.Value()) {
+            sprintf((char*)msg_send2, 
+                "\"TRANSFER_LOCK\": %d", 
+                TRANSFER_LOCK.Value());
+        }
         
+        strcat(msg_send, msg_send1);
+        strcat(msg_send, msg_send2);
+        // close the json }
+        msg_send[strlen(msg_send)] = '}';
         msg_send[strlen(msg_send)] = '\0';
         if(my_send(msg_send) == 0) {
             continue;
@@ -475,6 +506,8 @@ void *server_thread(void *args) {
     msg_send[strlen(msg_send)] = '\0';
     my_send(msg_send);
     memset(msg_send, 0, strlen(msg_send));
+    memset(msg_send1, 0, strlen(msg_send1));
+    memset(msg_send2, 0, strlen(msg_send2));
     server_thread_running = false;
     SERVER_CON.Set(false);
     // closing the connected socket
@@ -904,9 +937,8 @@ void run_app() {
     get_decimation();
     set_acquir();
 
-    // connect to the server
+    // run thread for the server
     pthread_create(&thread_handler[0], NULL, server_thread, NULL);
-    // connect_server();
     
     appState = true;
 }
@@ -1105,6 +1137,7 @@ void OnNewParams(void)
     SET_REF.Update();
     PIEZO_FEED.Update();
     CUR_FEED.Update();
+    TRANSFER_LOCK.Update();
     
     CH1_OUT_OFFSET.Update();
     CH2_OUT_OFFSET.Update();
