@@ -52,6 +52,8 @@
     APP.config.graph_colors = {
         'ch1': '#3276B1',           // like light blue
         'ch1_avg': '#D2322D',       // like red
+        'ch2': '#eef52a',           // like yellow
+        'ch2_avg': '#2af5cc',       // like mild green
         'spectrum_data': '#009900' // like green
     };
 
@@ -79,7 +81,6 @@
         processing: false,
         graph_grid_height: null,
         graph_grid_width: null,
-        resized: false,
         sel_sig_name: 'ch1'
     };
 
@@ -449,16 +450,18 @@
 
     // Processes newly received data for signals
     APP.processSignals = function(new_signals) {
-        var visible_plots = [];
         
         // Do nothing if non of channels are checked
-        if (!$("#CH1_IN_SHOW").data('checked') && !$("#CH2_IN_SHOW").data('checked')) {
+        if (!$("#CH1_IN_SHOW").data('checked') && 
+            !$("#CH2_IN_SHOW").data('checked') && 
+            !APP.params.orig['WLM_RUN'].value) {
             // Hide plots
             $('#graphs .plot').hide();
-            // $('#spec_graph .plot').hide();
-            // return;
+            $('#spec_graph .plot').hide();
+            return;
         }
 
+        var visible_plots = [];
         var pointArr = [];
         var colorsArr = [];
         var pointSpecArr = [];
@@ -471,11 +474,6 @@
             // Ignore empty signals
             if (len == 0)
                 continue;
-
-            // Ignore disabled signals
-            // if (!$("#" + sig_name.toUpperCase() + '_IN_SHOW').data('checked')) {
-            //     continue;
-            // }
 
             var color = APP.config.graph_colors[sig_name];
 
@@ -1611,20 +1609,6 @@ $(function() {
         // Hide all graphs, they will be shown next time signal data is received
         $('#graphs .plot').hide();
         $('#spec_graph .plot').hide();
-
-        // // Hide offset arrows, trigger level line and arrow
-        // $('.y-offset-arrow, #time_offset_arrow, #buf_time_offset, #trig_level_arrow, #trigger_level').hide();
-
-        // if (APP.ws) {
-        //     APP.params.local['in_command'] = { value: 'send_all_params' };
-        //     APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        //     APP.params.local = {};
-        // }
-        // Reset left position for trigger level arrow, it is added by jQ UI draggable
-        // $('#trig_level_arrow').css('left', '');
-        // Set the resized flag
-        APP.state.resized = true;
-        
     }).resize();
     
     // Stop the application when page is unloaded. it is last function is running

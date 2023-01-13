@@ -58,6 +58,7 @@ uint32_t buff_size = 16 * 1024;
 float *buff1 = (float *)malloc(buff_size * sizeof(float));
 float *buff1_avg = (float *)malloc(buff_size * sizeof(float));
 float *buff2 = (float *)malloc(buff_size * sizeof(float));
+float *buff2_avg = (float *)malloc(buff_size * sizeof(float));
 // bool fillState = false;
 
 bool appState = false;
@@ -89,6 +90,8 @@ int std_no_peaks_diff = 3;
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
 CFloatSignal ch1_avg("ch1_avg", SIGNAL_SIZE_DEFAULT, 0.0f);
+CFloatSignal ch2("ch2", SIGNAL_SIZE_DEFAULT, 0.0f);
+CFloatSignal ch2_avg("ch2_avg", SIGNAL_SIZE_DEFAULT, 0.0f);
 CFloatSignal spectrum_data("spectrum_data", SIGNAL_SIZE_DEFAULT, 0.0f);
 
 // Parameters
@@ -465,7 +468,7 @@ void *server_thread(void *args) {
             continue;
         }
         
-        if(WLM_LOCK.Value()) {
+        if(WLM_RUN.Value() && WLM_LOCK.Value()) {
             
             diff = fabs(trg_freq - freq);
             if(diff < 50) {
@@ -579,16 +582,16 @@ int scanning(float per = 0.2) {
             }
         }
 
-        if(freq_diff < std_freq_diff && per == 0.2 && WLM_LOCK.Value()) {                  // very good condition
+        if(freq_diff < std_freq_diff && per == 0.2 && WLM_RUN.Value() && WLM_LOCK.Value()) {                  // very good condition
             
             break;
-        } else if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_LOCK.Value()) {           // very good condition
+        } else if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_RUN.Value() && WLM_LOCK.Value()) {           // very good condition
             
             break;
-        } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && WLM_LOCK.Value()) {       // good condition
+        } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // good condition
             
             break;
-        } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && WLM_LOCK.Value()) {       // bad condition
+        } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // bad condition
             
             break;
         }
@@ -681,7 +684,7 @@ void *piezo_scan_thread(void *args) {
             LOCK_STATE.Set(false);
         }
 
-        if(WLM_LOCK.Value()) {
+        if(WLM_RUN.Value() && WLM_LOCK.Value()) {
 
             max_no_scan = 5;
             if(freq_diff < std_freq_diff * 2) {                 // very good condition
@@ -814,7 +817,11 @@ void analyseData(int mul, int ch) {
         locking();
     }
 
-    memcpy(buff1_avg, n_b, buff_size);
+    if(ch == 1) {
+        memcpy(buff1_avg, n_b, buff_size);
+    } else {
+        memcpy(buff2_avg, n_b, buff_size);
+    }
     free(n_b);
 }
 
@@ -1039,23 +1046,10 @@ void UpdateSignals(void)
 {
     int mul1 = CH1_IN_PROBE.Value();
     int mul2 = CH2_IN_PROBE.Value();
-    // fillState = false;
-    // rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;
 
     if(appState && 
         (CAV_LOCK.Value() || WLM_LOCK.Value() || 
         CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
-
-        // while(1){
-        //     rp_AcqGetTriggerState(&state);
-        //     if(state == RP_TRIG_STATE_TRIGGERED){
-        //         break;
-        //     }
-        // }
-
-        // while(!fillState){
-        //     rp_AcqGetBufferFillState(&fillState);
-        // }
 
         // channel 1 from transmission for cavity lock
         if((CAV_LOCK.Value() && AUTO_LOCK.Value()) || CH1_IN_SHOW.Value()) {
@@ -1066,33 +1060,24 @@ void UpdateSignals(void)
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
             analyseData(mul2, 2);
         }
-        if(WLM_LOCK.Value() && !CAV_LOCK.Value() && AUTO_LOCK.Value()) {
+        if(WLM_RUN.Value() && WLM_LOCK.Value() && !CAV_LOCK.Value() && AUTO_LOCK.Value()) {
             locking();
         }
     }
     
-    // int cap_s = floor((TIME_SCALE.Value() / 100) * ADC_SAMPLE_RATE / dec);
-    // if (cap_s > ADC_BUFFER_SIZE) {
-    //     cap_s = ADC_BUFFER_SIZE;
-    // } else if(cap_s < SIGNAL_SIZE_DEFAULT) {
-    //     cap_s = SIGNAL_SIZE_DEFAULT;
-    // }
-    // int avg_s = floor(cap_s / SIGNAL_SIZE_DEFAULT);
-    // avg_s = avg_s < 1 ? 1: avg_s;
-    // float sum1 = 0, sum2 = 0;
     for(int i = 0; i < SIGNAL_SIZE_DEFAULT; i++) {
-    //     for(int j = 0; j < avg_s; j++) {
-            
-    //         sum1 += buff1[(i * avg_s) + j] * mul1;
-    //         sum2 += buff2[(i * avg_s) + j] * mul2;
-    //     }
-    //     ch1[i] = sum1 / avg_s;
-    //     ch1_avg[i] = sum2 / avg_s;
-    //     sum1 = 0;
-    //     sum2 = 0;
-        ch1[i] = buff1[i] * mul1 - (VOLT_SCALE.Value() - 2.5);
-        ch1_avg[i] = buff1_avg[i] * mul1 - (VOLT_SCALE.Value() - 2.5);
-        spectrum_data[i] = spec[i];
+        
+        if(CH1_IN_SHOW.Value()) {
+            ch1[i] = buff1[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
+            ch1_avg[i] = buff1_avg[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
+        }
+        if(CH2_IN_SHOW.Value()) {
+            ch2[i] = buff2[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
+            ch2_avg[i] = buff2_avg[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
+        }
+        if(WLM_RUN.Value()) {
+            spectrum_data[i] = spec[i];
+        }
     }
 }
 
