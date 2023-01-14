@@ -80,7 +80,7 @@ int piezo_delay = SIGNAL_UPDATE_INTERVAL * 2000;   // delay us to apply new valu
 double freq = 0;        // use double instead of float
 double trg_freq = 0;
 double freq_diff = 0;
-const double std_freq_diff = 0.000005;
+double std_freq_diff = 0.000005;        // base on 5 digit precision
 const int distance_thr = 20;                // find peak in spectrum in this distance
 float hight_thr = 1000;                // find peak in spectrum above this hight
 int trg_no_peaks = 0;
@@ -128,6 +128,7 @@ CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20
 CBooleanParameter SERVER_CON("SERVER_CON", CBaseParameter::RWSA, true, 0);
 CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
 CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
+CIntParameter PREC("PREC", CBaseParameter::RW, 5, 0, 1, 8);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
 CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
@@ -439,8 +440,8 @@ void *server_thread(void *args) {
 
         if(WLM_RUN.Value()) {
             sprintf((char*)msg_send1, 
-                "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
-                WLM_RUN.Value(), WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), true, true, true);
+                "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"PREC\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
+                WLM_RUN.Value(), WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), PREC.Value(), true, true, true);
 
                 if(TRANSFER_LOCK.Value()) {
                     msg_send1[strlen(msg_send1)] = ',';
@@ -686,17 +687,19 @@ void *piezo_scan_thread(void *args) {
 
         if(WLM_RUN.Value() && WLM_LOCK.Value()) {
 
-            max_no_scan = 5;
+            max_no_scan = 10;
             if(freq_diff < std_freq_diff * 2) {                 // very good condition
 
                 piezo_delay = 15000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
+                no_scan = 0;
             } else if(freq_diff < std_freq_diff * 4) {      // good condition
 
                 piezo_delay = 9000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
+                no_scan = 0;
             } else if(freq_diff < std_freq_diff * 6) {      // bad condition
 
                 piezo_delay = 7000;     // us
@@ -1095,6 +1098,7 @@ void OnNewParams(void)
     float ch2_out_min = CH2_OUT_MIN.Value();
     float ch1_offset = CH1_OUT_OFFSET.Value();
     float ch2_offset = CH2_OUT_OFFSET.Value();
+    int prev_prec = PREC.Value();
     int prev_ch = WLM_CH.Value();
     bool auto_lock_prev = AUTO_LOCK.Value();
     
@@ -1129,6 +1133,7 @@ void OnNewParams(void)
     
     WLM_IP.Update();
     WLM_PORT.Update();
+    PREC.Update();
     WLM_CH.Update();
     EXP_UP.Update();
     EXP_DOWN.Update();
@@ -1231,6 +1236,31 @@ void OnNewParams(void)
         set_reference();
         SET_REF.Set(false);
     }
+    
+    if(prev_prec != PREC.Value()) {
+
+        switch (PREC.Value()) {
+        case 3:
+            std_freq_diff = 0.0005;
+            break;
+        case 4:
+            std_freq_diff = 0.00005;
+            break;
+        case 5:
+            std_freq_diff = 0.000005;
+            break;
+        case 6:
+            std_freq_diff = 0.0000005;
+            break;
+        case 7:
+            std_freq_diff = 0.00000005;
+            break;
+        default:
+            std_freq_diff = 0.000005;
+            break;
+        }
+    }
+
 }
 
 void OnNewSignals(void){}

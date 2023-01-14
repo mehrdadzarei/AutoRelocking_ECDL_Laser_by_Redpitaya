@@ -1037,9 +1037,17 @@
             port.value = $.cookie('WLM_PORT');
         }
 
+        if($.cookie('PREC') === undefined) {
+            $("#prec").val(3);
+            APP.params.local['PREC'] = { value: 3 };
+        } else {
+            $("#prec").val($.cookie('PREC'));
+            APP.params.local['PREC'] = { value: $.cookie('PREC') };
+        }
+
         if($.cookie('WLM_CH') === undefined) {
-            $("#WLM_CH").val(0);
-            APP.params.local['WLM_CH'] = { value: 0 };
+            $("#WLM_CH").val(1);
+            APP.params.local['WLM_CH'] = { value: 1 };
         } else {
             $("#WLM_CH").val($.cookie('WLM_CH'));
             APP.params.local['WLM_CH'] = { value: $.cookie('WLM_CH') };
@@ -1546,6 +1554,13 @@ $(function() {
         APP.sendParams();
     }
 
+    $("#prec").change(function() {
+        var val = $(this).children("option:selected").val();
+        $.cookie('PREC', val);
+        APP.params.local['PREC'] = { value: val };
+        APP.sendParams();
+    });
+
     $("#WLM_CH").change(function() {
         var val = $(this).children("option:selected").val();
         $.cookie('WLM_CH', val);
@@ -1686,6 +1701,7 @@ $(function() {
 
         $.cookie('WLM_IP', ip.value);
         $.cookie('WLM_PORT', port.value);
+        $.cookie('PREC', $("#prec").children("option:selected").val());
         $.cookie('WLM_CH', $("#WLM_CH").children("option:selected").val());
         $.cookie('EXP_UP', exp_up.value);
         $.cookie('EXP_DOWN', exp_down.value);
