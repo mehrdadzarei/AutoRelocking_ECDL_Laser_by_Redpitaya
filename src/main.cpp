@@ -45,6 +45,7 @@ int connect_server();
 #define DISCONNECT_MESSAGE "!DISCONNECT"
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define SIN(a) (((a)>(0))?(1):(-1))
 
 pthread_t thread_handler[NUM_THREADS];
 bool scan_thread_running = false;
@@ -74,10 +75,10 @@ float output_amp1 = 1;          // by default for Redpitaya is +- 1 v which is e
 float output_shift1 = 0;         // by default is zero
 float piezo_last_value = 0;
 float piezo_drift[2] = {0.0, 1.0};
-float diff_piezo_drift = 0;
+float diff_piezo_drift = 1.0;
 time_t t_drift[2] = {0, 0};
 int diff_t_drift = 0;
-float laser_drift = 0;          // v/s
+float laser_drift = 0;          // after every laser drift [s] one step piezo has shift
 time_t t1 = 0;
 time_t t2 = 0;
 int diff_t = 0;
@@ -671,6 +672,7 @@ void *piezo_scan_thread(void *args) {
     int rng_scan = 1;
     int no_scan = 0;
     int max_no_scan = 2;
+    time(&t1);              // to keep for saving data
     
     // scanning whole range of piezo
     while (repeat) {
@@ -769,16 +771,21 @@ void *piezo_scan_thread(void *args) {
     }
 
     lev = 0;
-    t_drift[0] = t_drift[1];                     // previous value on lock
-    time(&t_drift[1]);                          // new value on lock
-    time(&t1);                                  // start for correction
-    first_drift_t = 60;                         // after 60s start applying laser drift
-    piezo_drift[0] = piezo_drift[1];            // previous value on lock
-    piezo_drift[1] = CH1_OUT_OFFSET.Value();    // new value on lock
-    if(drift_no > 11) {                         // to avoide raising to much of drift_no and more than of 11
-        drift_no = 11;
+    diff_t_drift = t1 - t_drift[1];                                         // duration from lock to unlock
+    diff_piezo_drift = fabs(CH1_OUT_OFFSET.Value() - piezo_drift[1]);       // drift from last lock to new lock
+    // save new data only if last lock survive for more than of 30 s and laser drift is more than of 10 mv
+    if(diff_t_drift > 30 && diff_piezo_drift > (piezo_step * 10)) {
+
+        t_drift[0] = t_drift[1];                                            // previous value on lock
+        time(&t_drift[1]);                                                  // new value on lock
+        piezo_drift[0] = piezo_drift[1];                                    // previous value on lock
+        piezo_drift[1] = CH1_OUT_OFFSET.Value();                            // new value on lock
+        if(drift_no < 10) {                                                 // to avoide raising to much of drift_no
+            drift_no += 1;
+        }
     }
-    drift_no += 1;
+    first_drift_t = 60;                                                     // after 60 s start applying laser drift
+    time(&t1);                                                              // start for correction
     scan_thread_running = false;
     pthread_exit(NULL);
 }
@@ -803,6 +810,9 @@ void locking() {
 
                     if(drift_no >= 2) {
                         diff_piezo_drift = piezo_drift[1] - piezo_drift[0]; // new - prevoius, laser drift
+                        if(fabs(diff_piezo_drift) < piezo_step) {           // to avoid large numbers in laser drift
+                            diff_piezo_drift = SIN(diff_piezo_drift) * piezo_step;
+                        }
                         diff_t_drift = t_drift[1] - t_drift[0];             // stop - start, is duration of keeping lock
                     } else {
                         diff_piezo_drift = 1;                               // positive direction
@@ -810,10 +820,7 @@ void locking() {
                     }
 
                     if(diff_t_drift > 10) {                                 // less than of 10s it is error, skip
-                        laser_drift = diff_piezo_drift / diff_t_drift;      // laser drift v/s
-                    }
-                    if(drift_no < 3) {                                      // start applying correction after 5 times locking
-                        laser_drift = 0;
+                        laser_drift = (diff_t_drift * piezo_step) / fabs(diff_piezo_drift);
                     }
                     pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
                     scan_thread_running = true;                            // just to be sure for next checking condition
@@ -830,25 +837,18 @@ void locking() {
             time(&t2);
             diff_t = t2 - t1;       // different time from applying last correction
 
-            if(diff_t > first_drift_t && fabs(laser_drift) > 0) {
+            if(diff_t > first_drift_t && drift_no > 2) {
 
                 float p_val = 0.0;
-                float p_shift = 0.0;
 
-                p_shift = laser_drift * diff_t;
-                if(fabs(p_shift) > piezo_step * 5) {
-                    p_shift = piezo_step * 5;
+                p_val = CH1_OUT_OFFSET.Value() + SIN(diff_piezo_drift) * piezo_step;
+                send_out_gen1(p_val);
+                CH1_OUT_OFFSET.Set(p_val);
+                time(&t1);
+                first_drift_t = ceil(laser_drift * 1.3);         // after first drift, start correction every laser_drift * i
+                if(first_drift_t < 5) {
+                    first_drift_t = 5;
                 }
-
-                if(fabs(p_shift) >= piezo_step) {
-                    
-                    p_val = CH1_OUT_OFFSET.Value() + p_shift;
-                    send_out_gen1(p_val);
-                    CH1_OUT_OFFSET.Set(p_val);
-                    time(&t1);
-                }
-                
-                first_drift_t = 10;         // after first drift, start correction every 10s
             }
         }
     }
@@ -1220,6 +1220,7 @@ void OnNewParams(void)
             
             run_app();
             old_time_scale = TIME_SCALE.Value();
+            drift_no = 0;
         } else {
             
             stop_app();
