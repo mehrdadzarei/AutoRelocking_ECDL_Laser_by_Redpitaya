@@ -346,15 +346,15 @@
         var pzVal = new_params['CH1_OUT_OFFSET'].value;
         if('CH1_OUT_OFFSET' in new_params && pzVal != undefined && pzVal != pzN.value && APP.params.orig['AUTO_LOCK'].value) {
 
-            pzSl.value = pzVal;
-            pzN.value = pzVal;
+            pzSl.value = pzVal.toFixed(3);
+            pzN.value = pzVal.toFixed(3);
         }
 
         var curVal = new_params['CH2_OUT_OFFSET'].value;
         if('CH2_OUT_OFFSET' in new_params && curVal != undefined && curVal != curN.value && APP.params.orig['AUTO_LOCK'].value) {
 
-            curSl.value = curVal;
-            curN.value = curVal;
+            curSl.value = curVal.toFixed(3);
+            curN.value = curVal.toFixed(3);
         }
 
         if($('#exp_auto').is(':checked')) {
@@ -1008,6 +1008,19 @@
             }
         }
 
+        if($.cookie('LASER_DRIFT') === undefined) {
+            $("#laser_drift").attr("checked", false);
+            APP.params.local['LASER_DRIFT'] = { value: false };
+        } else {
+            if($.cookie('LASER_DRIFT') == 'true') {
+                $("#laser_drift").attr("checked", true);
+                APP.params.local['LASER_DRIFT'] = { value: true };
+            }else {
+                $("#laser_drift").attr("checked", false);
+                APP.params.local['LASER_DRIFT'] = { value: false };
+            }
+        }
+
         if($.cookie('TRANSFER_LOCK') === undefined) {
             $("#transfer_lock").attr("checked", false);
             APP.params.local['TRANSFER_LOCK'] = { value: false };
@@ -1493,6 +1506,15 @@ $(function() {
         APP.sendParams();
     });
 
+    $("#laser_drift").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $.cookie('LASER_DRIFT', checkBox);
+        
+        APP.params.local['LASER_DRIFT'] = { value: checkBox };
+        APP.sendParams();
+    });
+
     $("#transfer_lock").click(function() {
 
         var checkBox = $(this).is(':checked');
@@ -1694,6 +1716,7 @@ $(function() {
         $.cookie('WLM_LOCK', $('#wlm_lock').is(':checked'));
         $.cookie('PIEZO_FEED', $('#piezo_lock').is(':checked'));
         $.cookie('CUR_FEED', $('#curr_lock').is(':checked'));
+        $.cookie('LASER_DRIFT', $('#laser_drift').is(':checked'));
         $.cookie('TRANSFER_LOCK', $('#transfer_lock').is(':checked'));
 
         $.cookie('CH1_OUT_OFFSET', pzSl.value);

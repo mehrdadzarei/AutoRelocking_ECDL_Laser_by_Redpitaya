@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string>
@@ -72,6 +73,16 @@ float piezo_step = 0.001;       // v, for Redpitaya 10 bit reseloution is 2 mv
 float output_amp1 = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
 float output_shift1 = 0;         // by default is zero
 float piezo_last_value = 0;
+float piezo_drift[2] = {0.0, 1.0};
+float diff_piezo_drift = 0;
+time_t t_drift[2] = {0, 0};
+int diff_t_drift = 0;
+float laser_drift = 0;          // v/s
+time_t t1 = 0;
+time_t t2 = 0;
+int diff_t = 0;
+int first_drift_t = 60;         // after 60s start applying laser drift
+int drift_no = 0;
 float cur_step = 0.001;       // v, for Redpitaya 10 bit reseloution is 2 mv
 float output_amp2 = 1;          // by default for Redpitaya is +- 1 v which is equalt to 1 amplification
 float output_shift2 = 0;         // by default is zero
@@ -120,6 +131,7 @@ CBooleanParameter TARGET_FREQUENCY("TARGET_FREQUENCY", CBaseParameter::RW, false
 CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
+CBooleanParameter LASER_DRIFT("LASER_DRIFT", CBaseParameter::RW, false, 0);
 CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RW, false, 0);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -560,8 +572,15 @@ int scanning(float per = 0.2) {
     int len_scan = floor((max_scan - min_scan) * 2 / piezo_step);
     float curr_val = 0.0;
     double prev_freq_diff = freq_diff;
+    int i = 0;
 
-    for(int i = 0; i < len_scan; i++) {
+    // check direction base on laser drift, if negative change direction
+    if(diff_piezo_drift < 0) {
+        i = len_right_scan;
+        max_scan = piezo_last_value;
+    }
+
+    for(i; i < len_scan; i++) {
 
         if(((transmision > trans_lev && CAV_LOCK.Value()) || 
             (freq_diff < std_freq_diff && WLM_LOCK.Value())) || 
@@ -602,13 +621,14 @@ int scanning(float per = 0.2) {
             curr_val = piezo_last_value + i * piezo_step;
             curr_val = curr_val >= piezo_max ? piezo_max : curr_val;
 
+            // check direction base on freq
             if(freq_diff > (prev_freq_diff + std_freq_diff)) {
                 i = len_right_scan - 1;
                 max_scan = curr_val;
                 prev_freq_diff = freq_diff;
                 continue;
             }
-            if(i == (len_right_scan - 1) || curr_val == piezo_max) {
+            if(i == (len_right_scan - 1) || curr_val == piezo_max || curr_val > max_scan) {
                 i = len_right_scan - 1;
                 prev_freq_diff = freq_diff;
             }
@@ -623,14 +643,14 @@ int scanning(float per = 0.2) {
                 prev_freq_diff = freq_diff;
                 continue;
             }
-            if(curr_val == piezo_min) {
+            if(curr_val == piezo_min || curr_val < min_scan) {
                 i = (len_right_scan + (len_scan / 2)) - 1;
             }
         } else {
 
             curr_val = min_scan + (i - (len_right_scan + (len_scan / 2))) * piezo_step;
             curr_val = curr_val >= piezo_max ? piezo_max : curr_val;
-            if(curr_val == piezo_max) {
+            if(curr_val == piezo_max || curr_val > max_scan) {
                 i = len_scan;
             }
         }
@@ -640,9 +660,6 @@ int scanning(float per = 0.2) {
         usleep(piezo_delay);
     }
 
-    // if(min_scan == piezo_min && max_scan == piezo_max) {
-    //     return 0;
-    // }
     return 1;
 }
 
@@ -694,6 +711,7 @@ void *piezo_scan_thread(void *args) {
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
                 no_scan = 0;
+                diff_piezo_drift = 1;   // in the case of wavemeter after first try don't care about direction
             } else if(freq_diff < std_freq_diff * 4) {      // good condition
 
                 piezo_delay = 9000;     // us
@@ -728,6 +746,7 @@ void *piezo_scan_thread(void *args) {
                 rng_scan = 3;
             } else if (rng_scan == 3) {
                 
+                diff_piezo_drift = 1;   // after this case don't care about direction
                 piezo_delay = 5000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
@@ -749,8 +768,18 @@ void *piezo_scan_thread(void *args) {
         }
     }
 
-    scan_thread_running = false;
     lev = 0;
+    t_drift[0] = t_drift[1];                     // previous value on lock
+    time(&t_drift[1]);                          // new value on lock
+    time(&t1);                                  // start for correction
+    first_drift_t = 60;                         // after 60s start applying laser drift
+    piezo_drift[0] = piezo_drift[1];            // previous value on lock
+    piezo_drift[1] = CH1_OUT_OFFSET.Value();    // new value on lock
+    if(drift_no > 11) {                         // to avoide raising to much of drift_no and more than of 11
+        drift_no = 11;
+    }
+    drift_no += 1;
+    scan_thread_running = false;
     pthread_exit(NULL);
 }
 
@@ -771,12 +800,56 @@ void locking() {
             if(lev > 100 || freq_diff > std_freq_diff) {
                 
                 if(PIEZO_FEED.Value()) {
+
+                    if(drift_no >= 2) {
+                        diff_piezo_drift = piezo_drift[1] - piezo_drift[0]; // new - prevoius, laser drift
+                        diff_t_drift = t_drift[1] - t_drift[0];             // stop - start, is duration of keeping lock
+                    } else {
+                        diff_piezo_drift = 1;                               // positive direction
+                        diff_t_drift = 1;
+                    }
+
+                    if(diff_t_drift > 10) {                                 // less than of 10s it is error, skip
+                        laser_drift = diff_piezo_drift / diff_t_drift;      // laser drift v/s
+                    }
+                    if(drift_no < 3) {                                      // start applying correction after 5 times locking
+                        laser_drift = 0;
+                    }
                     pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
+                    scan_thread_running = true;                            // just to be sure for next checking condition
                 }
                 lev = 0;
             }
         } else {
+            
             lev = 0;
+        }
+
+        if(!scan_thread_running && LASER_DRIFT.Value()) {
+
+            time(&t2);
+            diff_t = t2 - t1;       // different time from applying last correction
+
+            if(diff_t > first_drift_t && fabs(laser_drift) > 0) {
+
+                float p_val = 0.0;
+                float p_shift = 0.0;
+
+                p_shift = laser_drift * diff_t;
+                if(fabs(p_shift) > piezo_step * 5) {
+                    p_shift = piezo_step * 5;
+                }
+
+                if(fabs(p_shift) >= piezo_step) {
+                    
+                    p_val = CH1_OUT_OFFSET.Value() + p_shift;
+                    send_out_gen1(p_val);
+                    CH1_OUT_OFFSET.Set(p_val);
+                    time(&t1);
+                }
+                
+                first_drift_t = 10;         // after first drift, start correction every 10s
+            }
         }
     }
 }
@@ -1126,6 +1199,7 @@ void OnNewParams(void)
     SET_REF.Update();
     PIEZO_FEED.Update();
     CUR_FEED.Update();
+    LASER_DRIFT.Update();
     TRANSFER_LOCK.Update();
     
     CH1_OUT_OFFSET.Update();
@@ -1159,6 +1233,7 @@ void OnNewParams(void)
             scan_thread_running = false;
         } else {
             LOCK_STATE.Set(true);
+            drift_no = 0;
         }
     }
 
