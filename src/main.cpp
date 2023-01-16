@@ -594,36 +594,33 @@ int scanning(float per = 0.2) {
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
                 if(transmision > trans_lev && freq_diff < std_freq_diff){
-                    break;
+                    return 2;       // to start scaning in small range
                 }
             } else if (transmision > trans_lev && CAV_LOCK.Value()) {
-                return 2;
+                return 2;       // to start scaning in small range
             } else if (freq_diff < std_freq_diff && WLM_LOCK.Value()) {
-                break;
+                return 2;       // to start scaning in small range
             }
         }
 
-        if(freq_diff < std_freq_diff && per == 0.2 && WLM_RUN.Value() && WLM_LOCK.Value()) {                  // very good condition
+        if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_RUN.Value() && WLM_LOCK.Value()) {           // very good condition
             
-            break;
-        } else if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_RUN.Value() && WLM_LOCK.Value()) {           // very good condition
-            
-            break;
+            return 2;
         } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // good condition
             
-            break;
+            return 3;
         } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // bad condition
             
-            break;
+            return 4;
         }
-        
+
         if(i < len_right_scan) {
             
             curr_val = piezo_last_value + i * piezo_step;
             curr_val = curr_val >= piezo_max ? piezo_max : curr_val;
 
             // check direction base on freq
-            if(freq_diff > (prev_freq_diff + std_freq_diff)) {
+            if(freq_diff > (prev_freq_diff + (std_freq_diff * 10))) {
                 i = len_right_scan - 1;
                 max_scan = curr_val;
                 prev_freq_diff = freq_diff;
@@ -638,7 +635,8 @@ int scanning(float per = 0.2) {
             curr_val = max_scan + (len_right_scan - i) * piezo_step;
             curr_val = curr_val <= piezo_min ? piezo_min : curr_val;
 
-            if(freq_diff > (prev_freq_diff + std_freq_diff)) {
+            // check direction base on freq
+            if(freq_diff > (prev_freq_diff + (std_freq_diff * 10))) {
                 i = (len_right_scan + (len_scan / 2)) - 1;
                 min_scan = curr_val;
                 prev_freq_diff = freq_diff;
@@ -704,69 +702,55 @@ void *piezo_scan_thread(void *args) {
             LOCK_STATE.Set(false);
         }
 
-        if(WLM_RUN.Value() && WLM_LOCK.Value()) {
+        switch (rng_scan) {
+            case 1:
 
-            max_no_scan = 10;
-            if(freq_diff < std_freq_diff * 2) {                 // very good condition
-
-                piezo_delay = 15000;     // us
-                piezo_step = 1 * piezo_step * output_amp1;
-                repeat = scanning(0.2);
-                no_scan = 0;
-                diff_piezo_drift = 1;   // in the case of wavemeter after first try don't care about direction
-            } else if(freq_diff < std_freq_diff * 4) {      // good condition
-
-                piezo_delay = 9000;     // us
-                piezo_step = 1 * piezo_step * output_amp1;
-                repeat = scanning(0.4);
-                no_scan = 0;
-            } else if(freq_diff < std_freq_diff * 6) {      // bad condition
-
-                piezo_delay = 7000;     // us
-                piezo_step = 1 * piezo_step * output_amp1;
-                repeat = scanning(0.8);
-            } else {                                        // very bad condition
-
-                piezo_delay = 5000;     // us
-                piezo_step = 1 * piezo_step * output_amp1;
-                repeat = scanning(2.0);
-                no_scan += 1;
-            }
-        }else {
-
-            if(rng_scan == 1) {
-                
                 piezo_delay = 15000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
                 rng_scan = 2;
-            } else if (rng_scan == 2) {
-                
+                break;
+            case 2:
+
                 piezo_delay = 9000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
                 rng_scan = 3;
-            } else if (rng_scan == 3) {
-                
+                break;
+            case 3:
+
                 diff_piezo_drift = 1;   // after this case don't care about direction
                 piezo_delay = 5000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
                 rng_scan = 4;
-            } else {
+                break;
+            default:
                 
                 piezo_delay = 5000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
-                repeat = scanning(rng_scan);
+                repeat = scanning(2.0);
                 rng_scan = 1;
                 no_scan += 1;
-            }
+                break;
+        }
 
-            if(repeat == 2) {
+        switch (repeat) {
+            case 2:
                 rng_scan = 1;
                 repeat = 1;
                 sleep(1);
-            }
+                break;
+            case 3:
+                rng_scan = 2;
+                repeat = 1;
+                break;
+            case 4:
+                rng_scan = 3;
+                repeat = 1;
+                break;
+            default:
+                break;
         }
     }
 
@@ -1317,24 +1301,24 @@ void OnNewParams(void)
     if(prev_prec != PREC.Value()) {
 
         switch (PREC.Value()) {
-        case 3:
-            std_freq_diff = 0.0005;
-            break;
-        case 4:
-            std_freq_diff = 0.00005;
-            break;
-        case 5:
-            std_freq_diff = 0.000005;
-            break;
-        case 6:
-            std_freq_diff = 0.0000005;
-            break;
-        case 7:
-            std_freq_diff = 0.00000005;
-            break;
-        default:
-            std_freq_diff = 0.000005;
-            break;
+            case 3:
+                std_freq_diff = 0.0005;
+                break;
+            case 4:
+                std_freq_diff = 0.00005;
+                break;
+            case 5:
+                std_freq_diff = 0.000005;
+                break;
+            case 6:
+                std_freq_diff = 0.0000005;
+                break;
+            case 7:
+                std_freq_diff = 0.00000005;
+                break;
+            default:
+                std_freq_diff = 0.000005;
+                break;
         }
     }
 

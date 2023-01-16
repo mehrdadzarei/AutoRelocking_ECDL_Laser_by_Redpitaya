@@ -376,14 +376,17 @@
         if(APP.running && 'WLM_LOCK' in new_params && wlm_lock_val != undefined && 
             wlm_lock_val != $('#wlm_lock').is(':checked')) {
 
-            $("#wlm_lock").attr("checked", wlm_lock_val);
-            
-            if($.cookie('TARGET_FREQUENCY') !== undefined) {
+            if(APP.params.orig['TARGET_FREQUENCY'].value < 1) {
 
-                let txt = 'Target Frequency is NOT Set (last value was ';
-                trg_msg.innerHTML = txt.concat(" ", $.cookie('TARGET_FREQUENCY'), ")");
+                $("#wlm_lock").attr("checked", wlm_lock_val);
+                
+                if($.cookie('TARGET_FREQUENCY') !== undefined) {
+
+                    let txt = 'Target Frequency is NOT Set (last value was ';
+                    trg_msg.innerHTML = txt.concat(" ", $.cookie('TARGET_FREQUENCY'), ")");
+                }
+                trg_msg.style.display = "block";
             }
-            trg_msg.style.display = "block";
         }
 
         if(APP.running) {
@@ -981,6 +984,8 @@
                 APP.params.local['WLM_LOCK'] = { value: false };
             }
         }
+        
+        APP.params.orig['TARGET_FREQUENCY'] = { value: 0.0 };
 
         if($.cookie('PIEZO_FEED') === undefined) {
             $("#piezo_lock").attr("checked", false);
@@ -1479,6 +1484,7 @@ $(function() {
         targ_freq_txt.innerHTML = txt.concat(" ", APP.params.orig['FREQ'].value);
         $.cookie('TARGET_FREQUENCY', APP.params.orig['FREQ'].value);
         APP.params.local['TARGET_FREQUENCY'] = { value: true };
+        APP.params.orig['TARGET_FREQUENCY'] = { value: APP.params.orig['FREQ'].value };
         APP.sendParams();
     });
 
