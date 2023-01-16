@@ -99,6 +99,11 @@ int trg_no_peaks = 0;
 int no_peaks_diff = 0;
 int std_no_peaks_diff = 3;
 
+bool switch_mode = true;
+bool expo_auto = false;
+int exp_up = 2;
+int exp_down = 0;
+
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
 CFloatSignal ch1_avg("ch1_avg", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -145,8 +150,8 @@ CIntParameter PREC("PREC", CBaseParameter::RW, 5, 0, 1, 8);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
 CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
-CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RW, false, 0);
-CBooleanParameter SWITCH_MODE("SWITCH_MODE", CBaseParameter::RW, true, 0);
+CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RWSA, false, 0);
+CBooleanParameter SWITCH_MODE("SWITCH_MODE", CBaseParameter::RWSA, true, 0);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
 CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
@@ -333,15 +338,28 @@ int my_recv() {
 
             if(send_wlm_state) {
                 
-                if(EXP_AUTO.Value()) {
-
+                // check if there is no new value then apply
+                if(SWITCH_MODE.Value() == switch_mode) {
+                    SWITCH_MODE.Set(obj.at("SWITCH_MODE").as_int() == 1 ? true:false);
+                }
+                
+                // check if there is no new value then apply
+                if(EXP_AUTO.Value() == expo_auto) {
+                    EXP_AUTO.Set(obj.at("EXP_AUTO").as_int() == 1 ? true:false);
+                }
+                
+                // check if there is no new value then apply
+                if(EXP_UP.Value() == exp_up) {
                     strcpy((char*)msg, (obj.at("EXP_UP").as_string()).c_str());
                     EXP_UP.Set(atoi((char*)msg));
+                }
 
+                // check if there is no new value then apply
+                if(EXP_DOWN.Value() == exp_down) {
                     strcpy((char*)msg, (obj.at("EXP_DOWN").as_string()).c_str());
                     EXP_DOWN.Set(atoi((char*)msg));
                 }
-
+                
                 WAVELENGTH.Set(obj.at("WAVEL").as_string());
 
                 strcpy((char*)msg, (obj.at("FREQ").as_string()).c_str());
@@ -452,9 +470,15 @@ void *server_thread(void *args) {
         msg_send[0] = '{';
 
         if(WLM_RUN.Value()) {
+            
+            switch_mode = SWITCH_MODE.Value();
+            expo_auto = EXP_AUTO.Value();
+            exp_up = EXP_UP.Value();
+            exp_down = EXP_DOWN.Value();
+
             sprintf((char*)msg_send1, 
                 "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"PREC\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
-                WLM_RUN.Value(), WLM_CH.Value(), EXP_UP.Value(), EXP_DOWN.Value(), EXP_AUTO.Value(), SWITCH_MODE.Value(), PREC.Value(), true, true, true);
+                WLM_RUN.Value(), WLM_CH.Value(), exp_up, exp_down, expo_auto, switch_mode, PREC.Value(), true, true, true);
 
                 if(TRANSFER_LOCK.Value()) {
                     msg_send1[strlen(msg_send1)] = ',';
@@ -593,7 +617,8 @@ int scanning(float per = 0.2) {
             
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
-                if(transmision > trans_lev && freq_diff < std_freq_diff){
+                // in this case transmission has more priority
+                if(transmision > trans_lev && freq_diff < (std_freq_diff * 6)){
                     return 2;       // to start scaning in small range
                 }
             } else if (transmision > trans_lev && CAV_LOCK.Value()) {
@@ -669,7 +694,7 @@ void *piezo_scan_thread(void *args) {
     int repeat = 1;
     int rng_scan = 1;
     int no_scan = 0;
-    int max_no_scan = 2;
+    int max_no_scan = 5;
     time(&t1);              // to keep for saving data
     
     // scanning whole range of piezo
@@ -685,7 +710,8 @@ void *piezo_scan_thread(void *args) {
             
             if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
                 
-                if(transmision > trans_lev && freq_diff < std_freq_diff){
+                // in this case transmission has more priority
+                if(transmision > trans_lev && freq_diff < (std_freq_diff * 6)){
                     break;
                 }
             } else if (transmision > trans_lev && CAV_LOCK.Value()) {
@@ -705,14 +731,14 @@ void *piezo_scan_thread(void *args) {
         switch (rng_scan) {
             case 1:
 
-                piezo_delay = 15000;     // us
+                piezo_delay = 20000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.2);
                 rng_scan = 2;
                 break;
             case 2:
 
-                piezo_delay = 9000;     // us
+                piezo_delay = 15000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.4);
                 rng_scan = 3;
@@ -720,7 +746,7 @@ void *piezo_scan_thread(void *args) {
             case 3:
 
                 diff_piezo_drift = 1;   // after this case don't care about direction
-                piezo_delay = 5000;     // us
+                piezo_delay = 10000;     // us
                 piezo_step = 1 * piezo_step * output_amp1;
                 repeat = scanning(0.8);
                 rng_scan = 4;
@@ -739,15 +765,18 @@ void *piezo_scan_thread(void *args) {
             case 2:
                 rng_scan = 1;
                 repeat = 1;
+                no_scan = 0;
                 sleep(1);
                 break;
             case 3:
                 rng_scan = 2;
                 repeat = 1;
+                no_scan = 0;
                 break;
             case 4:
                 rng_scan = 3;
                 repeat = 1;
+                no_scan = 0;
                 break;
             default:
                 break;

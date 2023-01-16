@@ -357,19 +357,31 @@
             curN.value = curVal.toFixed(3);
         }
 
-        if($('#exp_auto').is(':checked')) {
+        var switch_mode_val = new_params['SWITCH_MODE'].value;
+        if('SWITCH_MODE' in new_params && switch_mode_val != undefined && switch_mode_val != $('#switch_mode').is(':checked')) {
 
-            var exp_up_val = new_params['EXP_UP'].value;
-            if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
+            // here attr function doesn't work to check and uncheck!?
+            document.getElementById("switch_mode").checked = switch_mode_val;
+        }
+        
+        var exp_auto_val = new_params['EXP_AUTO'].value;
+        if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != APP.params.orig['EXP_AUTO'].value) {
 
-                exp_up.value = exp_up_val;
-            }
+            // here attr function doesn't work to check and uncheck!?
+            document.getElementById("exp_auto").checked = exp_auto_val;
+            APP.params.orig['EXP_AUTO'] = { value: exp_auto_val };
+        }
+        
+        var exp_up_val = new_params['EXP_UP'].value;
+        if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
 
-            var exp_down_val = new_params['EXP_DOWN'].value;
-            if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+            exp_up.value = exp_up_val;
+        }
 
-                exp_down.value = exp_down_val;
-            }
+        var exp_down_val = new_params['EXP_DOWN'].value;
+        if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
+
+            exp_down.value = exp_down_val;
         }
 
         var wlm_lock_val = new_params['WLM_LOCK'].value;
@@ -1090,13 +1102,16 @@
         if($.cookie('EXP_AUTO') === undefined) {
             $("#exp_auto").attr("checked", false);
             APP.params.local['EXP_AUTO'] = { value: false };
+            APP.params.orig['EXP_AUTO'] = { value: false };
         } else {
             if($.cookie('EXP_AUTO') == 'true') {
                 $("#exp_auto").attr("checked", true);
                 APP.params.local['EXP_AUTO'] = { value: true };
+                APP.params.orig['EXP_AUTO'] = { value: true };
             }else {
                 $("#exp_auto").attr("checked", false);
                 APP.params.local['EXP_AUTO'] = { value: false };
+                APP.params.orig['EXP_AUTO'] = { value: false };
             }
         }
 
@@ -1622,6 +1637,7 @@ $(function() {
         $.cookie('EXP_AUTO', checkBox);
         
         APP.params.local['EXP_AUTO'] = { value: checkBox };
+        APP.params.orig['EXP_AUTO'] = { value: checkBox };
         APP.sendParams();
     });
 
