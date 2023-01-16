@@ -832,6 +832,7 @@ void locking() {
             lev = 0;
         }
 
+        // apply laser drift
         if(!scan_thread_running && LASER_DRIFT.Value()) {
 
             time(&t2);
