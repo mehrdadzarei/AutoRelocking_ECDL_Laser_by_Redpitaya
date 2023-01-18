@@ -283,6 +283,7 @@ int my_recv() {
     // int json_len;
     float ratio;
     char msg[200] = {};
+    int msg_int;
     JSONNode data_array;
     JSONNode data_child;
 
@@ -367,21 +368,30 @@ int my_recv() {
                     EXP_DOWN.Set(atoi((char*)msg));
                 }
                 
-                WAVELENGTH.Set(obj.at("WAVEL").as_string());
+                strcpy((char*)msg, (obj.at("WAVEL").as_string()).c_str());
+                if(strcmp(msg, "None") != 0) {
+                    WAVELENGTH.Set((char*)msg);
+                }
 
                 strcpy((char*)msg, (obj.at("FREQ").as_string()).c_str());
-                FREQUENCY.Set((char*)msg);
-                freq = atof((char*)msg);
+                if(strcmp(msg, "None") != 0) {
+                    FREQUENCY.Set((char*)msg);
+                    freq = atof((char*)msg);
+                }
+                
 
                 strcpy((char*)msg, (obj.at("RATIO").as_string()).c_str());
-                ratio = atof((char*)msg);
-                data_array = obj.at("SPEC").as_array();
-                len = data_array.size();
+                if(strcmp(msg, "None") != 0) {
 
-                for(int i = 0; i < len; i++) {
-                
-                    data_child = data_array.at(i);
-                    spec[i] = data_child.as_float() / ratio;
+                    ratio = atof((char*)msg);
+                    data_array = obj.at("SPEC").as_array();
+                    len = data_array.size();
+
+                    for(int i = 0; i < len; i++) {
+                    
+                        data_child = data_array.at(i);
+                        spec[i] = data_child.as_float() / ratio;
+                    }
                 }
                 send_wlm_state = false;
             }
@@ -390,7 +400,10 @@ int my_recv() {
 
                 // check if there is no new value then apply
                 if(TRANSFER_LOCK.Value() == transfer_lock) {
-                    TRANSFER_LOCK.Set(obj.at("TRANSFER_LOCK").as_int() == 1 ? true:false);
+                    msg_int = obj.at("TRANSFER_LOCK").as_int();
+                    if(msg_int != 2) {      // no update if it is 2
+                        TRANSFER_LOCK.Set(msg_int == 1 ? true:false);
+                    }
                 }
 
                 send_digi_state = false;
