@@ -323,6 +323,7 @@
         var exp_down = document.getElementById("exp_down");
 
         const server_msg = document.getElementById("server_msg");
+        const digi_msg = document.getElementById("digi_msg");
         const wavel_txt = document.getElementById("wavel");
         const freq_txt = document.getElementById("freq");
         
@@ -389,6 +390,9 @@
 
             // here attr function doesn't work to check and uncheck!?
             document.getElementById("transfer_lock").checked = transfer_lock_val;
+            if(APP.running && !transfer_lock_val) {
+                digi_msg.style.display = "block";
+            }
         }
 
         var wlm_lock_val = new_params['WLM_LOCK'].value;
@@ -1224,6 +1228,7 @@ $(function() {
 
     const trg_msg = document.getElementById("trg_msg");
     const targ_freq_txt = document.getElementById("targ_freq");
+    const digi_msg = document.getElementById("digi_msg");
     
 
     $("#mode").click(function() {
@@ -1272,6 +1277,7 @@ $(function() {
     $("#man_lock").click(function() {
         $(this).hide();
         $("#auto_lock").css('display', 'block');
+        trg_msg.style.display = "none";
         pzSl.disabled = false;
         pzN.disabled = false;
         $.cookie('AUTO_LOCK', false);
@@ -1281,8 +1287,10 @@ $(function() {
     });
 
     $("#APP_RUN").click(function() {
+        
         $(this).hide();
         $("#APP_STOP").css('display', 'block');
+        digi_msg.style.display = "none";
         APP.params.local['APP_RUN'] = { value: true };
         APP.sendParams();
         APP.signalStack = [];
@@ -1291,6 +1299,7 @@ $(function() {
     });
 
     $("#APP_STOP").click(function() {
+        
         clearInterval(APP.guiHandler);
         $(this).hide();
         $("#APP_RUN").css('display', 'block');
@@ -1577,6 +1586,7 @@ $(function() {
 
     $("#transfer_lock").click(function() {
 
+        digi_msg.style.display = "none";
         var checkBox = $(this).is(':checked');
         $.cookie('TRANSFER_LOCK', checkBox);
         
