@@ -384,6 +384,13 @@
             exp_down.value = exp_down_val;
         }
 
+        var transfer_lock_val = new_params['TRANSFER_LOCK'].value;
+        if('TRANSFER_LOCK' in new_params && transfer_lock_val != undefined && transfer_lock_val != $('#transfer_lock').is(':checked')) {
+
+            // here attr function doesn't work to check and uncheck!?
+            document.getElementById("transfer_lock").checked = transfer_lock_val;
+        }
+
         var wlm_lock_val = new_params['WLM_LOCK'].value;
         if(APP.running && 'WLM_LOCK' in new_params && wlm_lock_val != undefined && 
             wlm_lock_val != $('#wlm_lock').is(':checked')) {
@@ -786,6 +793,10 @@
         var exp_up = document.getElementById("exp_up");
         var exp_down = document.getElementById("exp_down");
 
+        var ip_digi = document.getElementById("digi_ip");
+        var port_digi = document.getElementById("digi_port");
+        var ptp_lvl = document.getElementById("ptp_lvl");
+
         if($.cookie('AUTO_LOCK') === undefined) {
             $("#auto_lock").css('display', 'block');
             $("#man_lock").hide();
@@ -1128,6 +1139,30 @@
             }
         }
 
+        if($.cookie('DIGI_IP') === undefined) {
+            APP.params.local['DIGI_IP'] = { value: "192.168.0.175" };
+            ip_digi.value = "192.168.0.175";
+        } else {
+            APP.params.local['DIGI_IP'] = { value: $.cookie('DIGI_IP') };
+            ip_digi.value = $.cookie('DIGI_IP');
+        }
+
+        if($.cookie('DIGI_PORT') === undefined) {
+            APP.params.local['DIGI_PORT'] = { value: 60001 };
+            port_digi.value = 60001;
+        } else {
+            APP.params.local['DIGI_PORT'] = { value: $.cookie('DIGI_PORT') };
+            port_digi.value = $.cookie('DIGI_PORT');
+        }
+
+        if($.cookie('PTP_LVL') === undefined) {
+            APP.params.local['PTP_LVL'] = { value: 0.04 };
+            ptp_lvl.value = 0.04;
+        } else {
+            APP.params.local['PTP_LVL'] = { value: $.cookie('PTP_LVL') };
+            ptp_lvl.value = $.cookie('PTP_LVL');
+        }
+
         APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
         APP.params.local = {};
     };
@@ -1182,6 +1217,10 @@ $(function() {
     var port = document.getElementById("port");
     var exp_up = document.getElementById("exp_up");
     var exp_down = document.getElementById("exp_down");
+
+    var ip_digi = document.getElementById("digi_ip");
+    var port_digi = document.getElementById("digi_port");
+    var ptp_lvl = document.getElementById("ptp_lvl");
 
     const trg_msg = document.getElementById("trg_msg");
     const targ_freq_txt = document.getElementById("targ_freq");
@@ -1650,6 +1689,27 @@ $(function() {
         APP.sendParams();
     });
 
+    ip_digi.onchange = function() {
+        
+        $.cookie('DIGI_IP', this.value);
+        APP.params.local['DIGI_IP'] = { value: this.value };
+        APP.sendParams();
+    }
+
+    port_digi.onchange = function() {
+        
+        $.cookie('DIGI_PORT', this.value);
+        APP.params.local['DIGI_PORT'] = { value: this.value };
+        APP.sendParams();
+    }
+
+    ptp_lvl.onchange = function() {
+        
+        $.cookie('PTP_LVL', this.value);
+        APP.params.local['PTP_LVL'] = { value: this.value };
+        APP.sendParams();
+    }
+
     APP.drawGraphGrid();
     APP.drawSpecGraphGrid();
 
@@ -1752,6 +1812,10 @@ $(function() {
         $.cookie('EXP_DOWN', exp_down.value);
         $.cookie('EXP_AUTO', $('#exp_auto').is(':checked'));
         $.cookie('SWITCH_MODE', $('#switch_mode').is(':checked'));
+
+        $.cookie('DIGI_IP', ip_digi.value);
+        $.cookie('DIGI_PORT', port_digi.value);
+        $.cookie('PTP_LVL', ptp_lvl.value);
         
         APP.unexpectedClose = false;
     });

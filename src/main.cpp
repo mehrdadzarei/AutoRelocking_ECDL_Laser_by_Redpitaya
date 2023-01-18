@@ -53,6 +53,7 @@ bool server_thread_running = false;
 int sock, client;
 struct sockaddr_in address;
 bool send_wlm_state = false;
+bool send_digi_state = false;
 int ch = 1;
 float spec[2000] = {};
 
@@ -104,6 +105,8 @@ bool expo_auto = false;
 int exp_up = 2;
 int exp_down = 0;
 
+bool transfer_lock = false;
+
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
 CFloatSignal ch1_avg("ch1_avg", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -138,7 +141,7 @@ CBooleanParameter SET_REF("SET_REF", CBaseParameter::RW, false, 0);
 CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter LASER_DRIFT("LASER_DRIFT", CBaseParameter::RW, false, 0);
-CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RW, false, 0);
+CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RWSA, false, 0);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -153,8 +156,12 @@ CIntParameter EXP_DOWN("EXP_DOWN", CBaseParameter::RWSA, 0, 0, 0, 9999);
 CBooleanParameter EXP_AUTO("EXP_AUTO", CBaseParameter::RWSA, false, 0);
 CBooleanParameter SWITCH_MODE("SWITCH_MODE", CBaseParameter::RWSA, true, 0);
 
+CStringParameter DIGI_IP("DIGI_IP", CBaseParameter::RW, "192.168.0.175", 0);
+CIntParameter DIGI_PORT("DIGI_PORT", CBaseParameter::RW, 60001, 0, 0, 100000);
+CFloatParameter PTP_LVL("PTP_LVL", CBaseParameter::RW, 0.04, 0, 0, 2000);
+
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
-CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 20);
+CFloatParameter MEAN_CH2("MEAN_CH2", CBaseParameter::RWSA, 0.0, 0, -20, 2000);
 
 CStringParameter WAVELENGTH("WAVELENGTH", CBaseParameter::RWSA, "0", 0);
 CStringParameter FREQUENCY("FREQUENCY", CBaseParameter::RWSA, "0", 0);
@@ -378,6 +385,16 @@ int my_recv() {
                 }
                 send_wlm_state = false;
             }
+
+            if(send_digi_state) {
+
+                // check if there is no new value then apply
+                if(TRANSFER_LOCK.Value() == transfer_lock) {
+                    TRANSFER_LOCK.Set(obj.at("TRANSFER_LOCK").as_int() == 1 ? true:false);
+                }
+
+                send_digi_state = false;
+            }
         }
     }
 
@@ -450,6 +467,7 @@ void *server_thread(void *args) {
     char msg_send[1000] = {};
     char msg_send1[1000] = {};
     char msg_send2[1000] = {};
+    char msg_str[100] = {};
     float diff = 0;
     int no_peaks = 0;
     float min_peak = 0;
@@ -465,6 +483,7 @@ void *server_thread(void *args) {
         memset(msg_send, 0, strlen(msg_send));
         memset(msg_send1, 0, strlen(msg_send1));
         memset(msg_send2, 0, strlen(msg_send2));
+        memset(msg_str, 0, strlen(msg_str));
         
         // open the json {
         msg_send[0] = '{';
@@ -480,17 +499,23 @@ void *server_thread(void *args) {
                 "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"PREC\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
                 WLM_RUN.Value(), WLM_CH.Value(), exp_up, exp_down, expo_auto, switch_mode, PREC.Value(), true, true, true);
 
-                if(TRANSFER_LOCK.Value()) {
-                    msg_send1[strlen(msg_send1)] = ',';
-                    msg_send1[strlen(msg_send1)] = ' ';
-                }
-                send_wlm_state = true;
+            if(TRANSFER_LOCK.Value()) {
+                msg_send1[strlen(msg_send1)] = ',';
+                msg_send1[strlen(msg_send1)] = ' ';
+            }
+            send_wlm_state = true;
         }
 
         if(TRANSFER_LOCK.Value()) {
+            
+            transfer_lock = TRANSFER_LOCK.Value();
+            
+            // use \"%s\" for wraping ip around "" to avoid error
             sprintf((char*)msg_send2, 
-                "\"TRANSFER_LOCK\": %d", 
-                TRANSFER_LOCK.Value());
+                "\"TRANSFER_LOCK\": %d, \"DIGI_IP\": \"%s\", \"DIGI_PORT\": %d, \"PTP_LVL\": %f", 
+                transfer_lock, DIGI_IP.Value().c_str(), DIGI_PORT.Value(), PTP_LVL.Value());
+
+            send_digi_state = true;
         }
         
         strcat(msg_send, msg_send1);
@@ -549,6 +574,7 @@ void *server_thread(void *args) {
     memset(msg_send, 0, strlen(msg_send));
     memset(msg_send1, 0, strlen(msg_send1));
     memset(msg_send2, 0, strlen(msg_send2));
+    memset(msg_str, 0, strlen(msg_str));
     server_thread_running = false;
     SERVER_CON.Set(false);
     // closing the connected socket
@@ -1227,6 +1253,10 @@ void OnNewParams(void)
     EXP_DOWN.Update();
     EXP_AUTO.Update();
     SWITCH_MODE.Update();
+
+    DIGI_IP.Update();
+    DIGI_PORT.Update();
+    PTP_LVL.Update();
 
     // Run or stop APP
     if(APP_RUN.Value() != appState) {
