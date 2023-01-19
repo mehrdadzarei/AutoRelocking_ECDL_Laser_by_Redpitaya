@@ -106,6 +106,7 @@ int exp_up = 2;
 int exp_down = 0;
 
 bool transfer_lock = false;
+int transfer_lock_state = 0;
 
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -142,6 +143,7 @@ CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter LASER_DRIFT("LASER_DRIFT", CBaseParameter::RW, false, 0);
 CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RWSA, false, 0);
+CIntParameter ERROR_STATE("ERROR_STATE", CBaseParameter::RWSA, 1, 0, 0, 10);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -404,6 +406,8 @@ int my_recv() {
                     if(msg_int != 2) {      // no update if it is 2
                         TRANSFER_LOCK.Set(msg_int == 1 ? true:false);
                     }
+                    transfer_lock_state = obj.at("ERROR_STATE").as_int();
+                    ERROR_STATE.Set(transfer_lock_state);
                 }
 
                 send_digi_state = false;

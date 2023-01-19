@@ -391,6 +391,12 @@
             // here attr function doesn't work to check and uncheck!?
             document.getElementById("transfer_lock").checked = transfer_lock_val;
             if(APP.running && !transfer_lock_val) {
+                
+                if(new_params['ERROR_STATE'].value == 0) {
+                    digi_msg.innerHTML = 'There is no Peak for Locking on DigiLock, find the Peak manually first then apply Lock!';
+                } else {
+                    digi_msg.innerHTML = 'DigiLock is not Connected! Check parameters (IP, PORT) or restart DigiLock';
+                }
                 digi_msg.style.display = "block";
             }
         }
@@ -431,8 +437,10 @@
                 $("#man_lock").click();
             }
         }else {
+            trg_msg.style.display = "none";
             server_msg.style.display = "none";
             graph_msg.style.display = "none";
+            digi_msg.style.display = "none";
         }
         
         var wavel_val = new_params['WAVELENGTH'].value;
