@@ -84,8 +84,8 @@
                     <div class="collapse navbar-collapse">
                         <ul class="nav navbar-nav">
                             <li>
-                                <a id="WLM_RUN" href="#" style="width: 175px;">Run Wavemeter</a>
-                                <a id="WLM_STOP" href="#" style="display:none; width: 175px;">Stop Wavemeter</a>
+                                <a id="SERVER_RUN" href="#" style="width: 150px;">Run Server</a>
+                                <a id="SERVER_STOP" href="#" style="display:none; width: 150px;">Stop Server</a>
                             </li>
                             <li>
                                 <a id="auto_lock" href="#" style="width: 145px;">Auto Lock</a>
@@ -301,6 +301,10 @@
                                         <input id="port" style="width: 80px;" type="number" value="5015">
                                     </div>
                                     <div class="row">
+                                        <input id="WLM_RUN" type="checkbox">
+                                        <label for="WLM_RUN"> Wavemeter </label>
+                                    </div>
+                                    <div class="row">
                                         <label>Precision: </label>
                                         <select id="prec" style="width: 50px;">
                                             <option value="3">3</option>
@@ -403,6 +407,8 @@
                             <div id="server_info" style="display:none;">
                                 <h2 id="server_msg" style="display:none; color: rgb(189, 79, 79);">Wavemeter Server is not Connected! </h2>
                                 <h2 id="digi_msg" style="display:none; color: rgb(189, 79, 79);">DigiLock is not Connected! Check parameters (IP, PORT) or restart DigiLock </h2>
+                            </div>
+                            <div id="wlm_info" style="display:none;">
                                 <h2 id="wavel">Wavelength [nm]: </h2>
                                 <h2 id="freq">Frequency [THz]: </h2>
                                 <h2 id="targ_freq">Target [THz]: &emsp;&ensp;&nbsp; 0</h2>

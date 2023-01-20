@@ -106,7 +106,7 @@ int exp_up = 2;
 int exp_down = 0;
 
 bool transfer_lock = false;
-int transfer_lock_state = 0;
+int transfer_lock_state = 2;        // 0 = there is no peak, 1 = locked, 2 = hold on it is locking
 
 //Signals
 CFloatSignal ch1("ch1", SIGNAL_SIZE_DEFAULT, 0.0f);
@@ -119,7 +119,8 @@ CFloatSignal spectrum_data("spectrum_data", SIGNAL_SIZE_DEFAULT, 0.0f);
 CBooleanParameter APP_RUN("APP_RUN", CBaseParameter::RW, false, 0);
 CBooleanParameter AUTO_LOCK("AUTO_LOCK", CBaseParameter::RW, false, 0);
 CBooleanParameter LOCK_STATE("LOCK_STATE", CBaseParameter::RWSA, true, 0);
-CBooleanParameter WLM_RUN("WLM_RUN", CBaseParameter::RW, false, 0);
+CBooleanParameter SERVER_RUN("SERVER_RUN", CBaseParameter::RW, false, 0);
+CBooleanParameter SERVER_CON("SERVER_CON", CBaseParameter::RWSA, true, 0);
 
 CFloatParameter TIME_SCALE("TIME_SCALE", CBaseParameter::RWSA, 0.1, 0, 0, 1000);
 CFloatParameter VOLT_SCALE("VOLT_SCALE", CBaseParameter::RWSA, 0.1, 0, 0, 10);
@@ -148,9 +149,9 @@ CIntParameter ERROR_STATE("ERROR_STATE", CBaseParameter::RWSA, 1, 0, 0, 10);
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 
-CBooleanParameter SERVER_CON("SERVER_CON", CBaseParameter::RWSA, true, 0);
 CStringParameter WLM_IP("WLM_IP", CBaseParameter::RW, "192.168.0.154", 0);
 CIntParameter WLM_PORT("WLM_PORT", CBaseParameter::RW, 5015, 0, 0, 100000);
+CBooleanParameter WLM_RUN("WLM_RUN", CBaseParameter::RW, false, 0);
 CIntParameter PREC("PREC", CBaseParameter::RW, 5, 0, 1, 8);
 CIntParameter WLM_CH("WLM_CH", CBaseParameter::RW, 1, 0, 1, 8);
 CIntParameter EXP_UP("EXP_UP", CBaseParameter::RWSA, 2, 0, 2, 9999);
@@ -616,6 +617,7 @@ int connect_server() {
         // pthread_create(&thread_handler[0], NULL, server_thread, NULL);
     }else {
         SERVER_CON.Set(false);
+        SERVER_RUN.Set(false);
         server_thread_running = false;
 
         return 0;
@@ -651,14 +653,14 @@ int scanning(float per = 0.2) {
     for(i; i < len_scan; i++) {
 
         if(((transmision > trans_lev && CAV_LOCK.Value()) || 
-            (freq_diff < std_freq_diff && WLM_LOCK.Value())) || 
+            (freq_diff < std_freq_diff && (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value()))) || 
             !scan_thread_running) {
 
             if(!scan_thread_running) {
                 break;
             } 
             
-            if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
+            if(CAV_LOCK.Value() && (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value())) {
                 
                 // in this case transmission has more priority
                 if(transmision > trans_lev && freq_diff < (std_freq_diff * 6)){
@@ -671,13 +673,16 @@ int scanning(float per = 0.2) {
             }
         }
 
-        if(freq_diff < std_freq_diff * 2 && per == 0.4 && WLM_RUN.Value() && WLM_LOCK.Value()) {           // very good condition
+        if(freq_diff < std_freq_diff * 2 && per == 0.4 && 
+            (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value())) {           // very good condition
             
             return 2;
-        } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // good condition
+        } else if(freq_diff < std_freq_diff * 4 && per == 0.8 && 
+            (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value())) {       // good condition
             
             return 3;
-        } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && WLM_RUN.Value() && WLM_LOCK.Value()) {       // bad condition
+        } else if(freq_diff < std_freq_diff * 6 && per == 2.0 && 
+            (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value())) {       // bad condition
             
             return 4;
         }
@@ -744,14 +749,14 @@ void *piezo_scan_thread(void *args) {
     while (repeat) {
             
         if(((transmision > trans_lev && CAV_LOCK.Value()) || 
-            (freq_diff < std_freq_diff && WLM_LOCK.Value())) || 
+            (freq_diff < std_freq_diff && (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value()))) || 
             !scan_thread_running) {
 
             if(!scan_thread_running) {
                 break;
             }
             
-            if(CAV_LOCK.Value() && WLM_LOCK.Value()) {
+            if(CAV_LOCK.Value() && (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value())) {
                 
                 // in this case transmission has more priority
                 if(transmision > trans_lev && freq_diff < (std_freq_diff * 6)){
@@ -848,12 +853,13 @@ void *piezo_scan_thread(void *args) {
 
 void locking() {
 
-    // don't effect if target frequency is not set
-    if(trg_freq < 1 && WLM_LOCK.Value()) {
+    // don't effect if target frequency is not set for wavemeter lock
+    if(WLM_LOCK.Value() && WLM_RUN.Value() && trg_freq < 1 && SERVER_RUN.Value()) {
         WLM_LOCK.Set(false);
     }
 
-    if(AUTO_LOCK.Value() && LOCK_STATE.Value() && (CAV_LOCK.Value() || WLM_LOCK.Value())) {
+    if(AUTO_LOCK.Value() && LOCK_STATE.Value() && 
+        (CAV_LOCK.Value() || (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value()))) {
             
         if(!scan_thread_running && ((CAV_LOCK.Value() && transmision < trans_lev) || 
             (WLM_LOCK.Value() && freq_diff > std_freq_diff) ||
@@ -1077,9 +1083,6 @@ void run_app() {
     get_decimation();
     set_acquir();
 
-    // run thread for the server
-    pthread_create(&thread_handler[0], NULL, server_thread, NULL);
-    
     appState = true;
 }
 
@@ -1181,35 +1184,34 @@ void UpdateSignals(void)
     int mul2 = CH2_IN_PROBE.Value();
 
     if(appState && 
-        (CAV_LOCK.Value() || WLM_LOCK.Value() || 
+        (CAV_LOCK.Value() || (WLM_LOCK.Value() && SERVER_RUN.Value()) || 
         CH1_IN_SHOW.Value() || CH2_IN_SHOW.Value())) {
 
         // channel 1 from transmission for cavity lock
         if((CAV_LOCK.Value() && AUTO_LOCK.Value()) || CH1_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff1);
             analyseData(mul1, 1);
+        } else if(SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value() && AUTO_LOCK.Value()) {
+            locking();
         }
         if(CH2_IN_SHOW.Value()) {
             rp_AcqGetOldestDataV(RP_CH_2, &buff_size, buff2);
             analyseData(mul2, 2);
         }
-        if(WLM_RUN.Value() && WLM_LOCK.Value() && !CAV_LOCK.Value() && AUTO_LOCK.Value()) {
-            locking();
-        }
-    }
-    
-    for(int i = 0; i < SIGNAL_SIZE_DEFAULT; i++) {
-        
-        if(CH1_IN_SHOW.Value()) {
-            ch1[i] = buff1[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
-            ch1_avg[i] = buff1_avg[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
-        }
-        if(CH2_IN_SHOW.Value()) {
-            ch2[i] = buff2[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
-            ch2_avg[i] = buff2_avg[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
-        }
-        if(WLM_RUN.Value()) {
-            spectrum_data[i] = spec[i];
+
+        for(int i = 0; i < SIGNAL_SIZE_DEFAULT; i++) {
+            
+            if(CH1_IN_SHOW.Value()) {
+                ch1[i] = buff1[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
+                ch1_avg[i] = buff1_avg[i] * mul1 - (VOLT_SCALE.Value() + MEAN_CH1.Value());
+            }
+            if(CH2_IN_SHOW.Value()) {
+                ch2[i] = buff2[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
+                ch2_avg[i] = buff2_avg[i] * mul2 - (VOLT_SCALE.Value() + MEAN_CH2.Value());
+            }
+            if(SERVER_RUN.Value() && WLM_RUN.Value()) {
+                spectrum_data[i] = spec[i];
+            }
         }
     }
 }
@@ -1234,7 +1236,7 @@ void OnNewParams(void)
     
     APP_RUN.Update();
     AUTO_LOCK.Update();
-    WLM_RUN.Update();
+    SERVER_RUN.Update();
 
     TIME_SCALE.Update();
     VOLT_SCALE.Update();
@@ -1264,6 +1266,7 @@ void OnNewParams(void)
     
     WLM_IP.Update();
     WLM_PORT.Update();
+    WLM_RUN.Update();
     PREC.Update();
     WLM_CH.Update();
     EXP_UP.Update();
@@ -1279,13 +1282,23 @@ void OnNewParams(void)
     if(APP_RUN.Value() != appState) {
         if (APP_RUN.Value() == true) {
             
-            run_app();
             old_time_scale = TIME_SCALE.Value();
             drift_no = 0;
+            transfer_lock_state = 2;
+            run_app();
         } else {
             
             stop_app();
         }
+    }
+
+    // only connect to the server if we need wavemeter or transfer lock
+    if(appState && !server_thread_running && SERVER_RUN.Value()) {
+        SERVER_CON.Set(true);
+        // run thread for the server
+        pthread_create(&thread_handler[0], NULL, server_thread, NULL);
+    } else if(!SERVER_RUN.Value()) {
+        server_thread_running = false;
     }
 
     // stop running thread

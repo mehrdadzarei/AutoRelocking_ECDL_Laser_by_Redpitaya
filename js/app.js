@@ -421,13 +421,17 @@
         if(APP.running) {
             
             var server_state = new_params['SERVER_CON'].value;
-            if(server_state) {
+            if(APP.params.orig['SERVER_RUN'].value && server_state) {
                 server_msg.style.display = "none";
                 // server_msg.innerHTML = "Connected!";
-            } else { 
+            } else if(APP.params.orig['SERVER_RUN'].value && !server_state) { 
+                
                 server_msg.style.display = "block";
                 // server_msg.innerHTML = "Wavemeter is not Connected!";
-            }  
+                $("#SERVER_RUN").css('display', 'block');
+                $("#SERVER_STOP").hide();
+                APP.params.orig['SERVER_RUN'] = { value: false };
+            }
             
             var lock_state = new_params['LOCK_STATE'].value;
             if(lock_state) {
@@ -486,9 +490,10 @@
     APP.processSignals = function(new_signals) {
         
         // Do nothing if non of channels are checked
-        if (!$("#CH1_IN_SHOW").data('checked') && 
+        if (!APP.running ||
+            (!$("#CH1_IN_SHOW").data('checked') && 
             !$("#CH2_IN_SHOW").data('checked') && 
-            !APP.params.orig['WLM_RUN'].value) {
+            !APP.params.orig['WLM_RUN'].value)) {
             // Hide plots
             $('#graphs .plot').hide();
             $('#spec_graph .plot').hide();
@@ -809,58 +814,30 @@
         var port_digi = document.getElementById("digi_port");
         var ptp_lvl = document.getElementById("ptp_lvl");
 
-        if($.cookie('AUTO_LOCK') === undefined) {
-            $("#auto_lock").css('display', 'block');
-            $("#man_lock").hide();
-            pzSl.disabled = false;
-            pzN.disabled = false;
-            curSl.disabled = false;
-            curN.disabled = false;
-            APP.params.local['AUTO_LOCK'] = { value: false };
-            APP.params.orig['AUTO_LOCK'] = { value: false };
-        } else {
-            if($.cookie('AUTO_LOCK') === "true") {
+        APP.params.orig['AUTO_LOCK'] = { value: false };
 
-                $("#auto_lock").hide();
-                $("#man_lock").css('display', 'block');
-                pzSl.disabled = true;
-                pzN.disabled = true;
-                curSl.disabled = true;
-                curN.disabled = true;
-                APP.params.local['AUTO_LOCK'] = { value: true };
-                APP.params.orig['AUTO_LOCK'] = { value: true };
-            } else {
-                $("#auto_lock").css('display', 'block');
-                $("#man_lock").hide();
-                pzSl.disabled = false;
-                pzN.disabled = false;
-                curSl.disabled = false;
-                curN.disabled = false;
-                APP.params.local['AUTO_LOCK'] = { value: false };
-                APP.params.orig['AUTO_LOCK'] = { value: false };
-            }
-        }
-
-        if($.cookie('WLM_RUN') === undefined) {
-            $("#WLM_RUN").css('display', 'block');
-            $("#WLM_STOP").hide();
+        if($.cookie('SERVER_RUN') === undefined) {
+            
+            $("#SERVER_RUN").css('display', 'block');
+            $("#SERVER_STOP").hide();
             $("#server_info").css('display', 'none');
-            APP.params.local['WLM_RUN'] = { value: false };
-            APP.params.orig['WLM_RUN'] = { value: false };
+            APP.params.local['SERVER_RUN'] = { value: false };
+            APP.params.orig['SERVER_RUN'] = { value: false };
         } else {
-            if($.cookie('WLM_RUN') === "true") {
+            if($.cookie('SERVER_RUN') === "true") {
 
-                $("#WLM_RUN").hide();
-                $("#WLM_STOP").css('display', 'block');
+                $("#SERVER_RUN").hide();
+                $("#SERVER_STOP").css('display', 'block');
                 $("#server_info").css('display', 'block');
-                APP.params.local['WLM_RUN'] = { value: true };
-                APP.params.orig['WLM_RUN'] = { value: true };
+                APP.params.local['SERVER_RUN'] = { value: true };
+                APP.params.orig['SERVER_RUN'] = { value: true };
             } else {
-                $("#WLM_RUN").css('display', 'block');
-                $("#WLM_STOP").hide();
+                
+                $("#SERVER_RUN").css('display', 'block');
+                $("#SERVER_STOP").hide();
                 $("#server_info").css('display', 'none');
-                APP.params.local['WLM_RUN'] = { value: false };
-                APP.params.orig['WLM_RUN'] = { value: false };
+                APP.params.local['SERVER_RUN'] = { value: false };
+                APP.params.orig['SERVER_RUN'] = { value: false };
             }
         }
         
@@ -1090,6 +1067,28 @@
             port.value = $.cookie('WLM_PORT');
         }
 
+        if($.cookie('WLM_RUN') === undefined) {
+            
+            $("#WLM_RUN").attr("checked", false);
+            $("#wlm_info").css('display', 'none');
+            APP.params.local['WLM_RUN'] = { value: false };
+            APP.params.orig['WLM_RUN'] = { value: false };
+        } else {
+            if($.cookie('WLM_RUN') === "true") {
+
+                $("#WLM_RUN").attr("checked", true);
+                $("#wlm_info").css('display', 'block');
+                APP.params.local['WLM_RUN'] = { value: true };
+                APP.params.orig['WLM_RUN'] = { value: true };
+            } else {
+                
+                $("#WLM_RUN").attr("checked", false);
+                $("#wlm_info").css('display', 'none');
+                APP.params.local['WLM_RUN'] = { value: false };
+                APP.params.orig['WLM_RUN'] = { value: false };
+            }
+        }
+
         if($.cookie('PREC') === undefined) {
             $("#prec").val(3);
             APP.params.local['PREC'] = { value: 3 };
@@ -1234,6 +1233,7 @@ $(function() {
     var port_digi = document.getElementById("digi_port");
     var ptp_lvl = document.getElementById("ptp_lvl");
 
+    const server_msg = document.getElementById("server_msg");
     const trg_msg = document.getElementById("trg_msg");
     const targ_freq_txt = document.getElementById("targ_freq");
     const digi_msg = document.getElementById("digi_msg");
@@ -1248,23 +1248,26 @@ $(function() {
         }
     });
 
-    $("#WLM_RUN").click(function() {
+    $("#SERVER_RUN").click(function() {
+        
         $(this).hide();
-        $("#WLM_STOP").css('display', 'block');
+        $("#SERVER_STOP").css('display', 'block');
         $("#server_info").css('display', 'block');
-        $.cookie('WLM_RUN', true);
-        APP.params.orig['WLM_RUN'] = { value: true };
-        APP.params.local['WLM_RUN'] = { value: true };
+        server_msg.style.display = "none";
+        $.cookie('SERVER_RUN', true);
+        APP.params.orig['SERVER_RUN'] = { value: true };
+        APP.params.local['SERVER_RUN'] = { value: true };
         APP.sendParams();
     });
 
-    $("#WLM_STOP").click(function() {
+    $("#SERVER_STOP").click(function() {
+        
         $(this).hide();
-        $("#WLM_RUN").css('display', 'block');
+        $("#SERVER_RUN").css('display', 'block');
         $("#server_info").css('display', 'none');
-        $.cookie('WLM_RUN', false);
-        APP.params.orig['WLM_RUN'] = { value: false };
-        APP.params.local['WLM_RUN'] = { value: false };
+        $.cookie('SERVER_RUN', false);
+        APP.params.orig['SERVER_RUN'] = { value: false };
+        APP.params.local['SERVER_RUN'] = { value: false };
         APP.sendParams();
     });
 
@@ -1276,19 +1279,18 @@ $(function() {
         pzN.disabled = true;
         trg_msg.style.display = "none";
         
-        $.cookie('AUTO_LOCK', true);
         APP.params.local['AUTO_LOCK'] = { value: true };
         APP.params.orig['AUTO_LOCK'] = { value: true };
         APP.sendParams();
     });
 
     $("#man_lock").click(function() {
+        
         $(this).hide();
         $("#auto_lock").css('display', 'block');
         trg_msg.style.display = "none";
         pzSl.disabled = false;
         pzN.disabled = false;
-        $.cookie('AUTO_LOCK', false);
         APP.params.local['AUTO_LOCK'] = { value: false };
         APP.params.orig['AUTO_LOCK'] = { value: false };
         APP.sendParams();
@@ -1298,7 +1300,7 @@ $(function() {
         
         $(this).hide();
         $("#APP_STOP").css('display', 'block');
-        digi_msg.style.display = "none";
+        $("#server_info").css('display', 'none');
         APP.params.local['APP_RUN'] = { value: true };
         APP.sendParams();
         APP.signalStack = [];
@@ -1654,6 +1656,20 @@ $(function() {
         APP.sendParams();
     }
 
+    $("#WLM_RUN").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        if(checkBox) {
+            $("#wlm_info").css('display', 'block');
+        } else {
+            $("#wlm_info").css('display', 'none');
+        }
+        $.cookie('WLM_RUN', checkBox);
+        APP.params.orig['WLM_RUN'] = { value: checkBox };
+        APP.params.local['WLM_RUN'] = { value: checkBox };
+        APP.sendParams();
+    });
+
     $("#prec").change(function() {
         var val = $(this).children("option:selected").val();
         $.cookie('PREC', val);
@@ -1764,8 +1780,7 @@ $(function() {
             $.cookie("mode", "light");
         }
 
-        $.cookie('AUTO_LOCK', APP.params.orig['AUTO_LOCK'].value);
-        $.cookie('WLM_RUN', APP.params.orig['WLM_RUN'].value);
+        $.cookie('SERVER_RUN', APP.params.orig['SERVER_RUN'].value);
 
         if($("#CH1_IN_SHOW").data('checked')) {
             $.cookie('CH1_IN_SHOW', "true");
@@ -1824,6 +1839,7 @@ $(function() {
 
         $.cookie('WLM_IP', ip.value);
         $.cookie('WLM_PORT', port.value);
+        $.cookie('WLM_RUN', APP.params.orig['WLM_RUN'].value);
         $.cookie('PREC', $("#prec").children("option:selected").val());
         $.cookie('WLM_CH', $("#WLM_CH").children("option:selected").val());
         $.cookie('EXP_UP', exp_up.value);
