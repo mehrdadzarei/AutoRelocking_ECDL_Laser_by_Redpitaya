@@ -412,15 +412,13 @@ int my_recv() {
 
                         if(msg_int == 1) {
 
-                            // check if there is no new value then apply
-                            if(TRANSFER_LOCK.Value() == digi_lock) {
+                            // check if there is no new value then apply, also if transfer lock is true check new values
+                            if(TRANSFER_LOCK.Value() == digi_lock && TRANSFER_LOCK.Value()) {
                                 transfer_lock_state = obj.at("TRANSFER_LOCK").as_int();
                                 if(transfer_lock_state != 2) {      // locking if it is 2
                                     TRANSFER_LOCK.Set(transfer_lock_state == 1 ? true:false);
                                 }
                             }
-                        } else {
-                            transfer_lock_state = 0;
                         }
                     }
                 }
@@ -549,6 +547,9 @@ void *server_thread(void *args) {
                 digi_run, digi_lock, DIGI_IP.Value().c_str(), DIGI_PORT.Value(), PTP_LVL.Value());
 
             send_digi_state = true;
+            if(digi_lock) {
+                transfer_lock_state = 2;        // hold on locking till get the result
+            }
         }
         
         strcat(msg_send, msg_send1);
@@ -848,9 +849,9 @@ void *piezo_scan_thread(void *args) {
 
     lev = 0;
     diff_t_drift = t1 - t_drift[1];                                         // duration from lock to unlock
-    diff_piezo_drift = fabs(CH1_OUT_OFFSET.Value() - piezo_drift[1]);       // drift from last lock to new lock
+    diff_piezo_drift = CH1_OUT_OFFSET.Value() - piezo_drift[1];             // drift from last lock to new lock
     // save new data only if last lock survive for more than of 30 s and laser drift is more than of 10 mv
-    if(diff_t_drift > 30 && diff_piezo_drift > (piezo_step * 10)) {
+    if(diff_t_drift > 30 && fabs(diff_piezo_drift) > (piezo_step * 10)) {
 
         t_drift[0] = t_drift[1];                                            // previous value on lock
         time(&t_drift[1]);                                                  // new value on lock
@@ -859,6 +860,8 @@ void *piezo_scan_thread(void *args) {
         if(drift_no < 10) {                                                 // to avoide raising to much of drift_no
             drift_no += 1;
         }
+    } else {
+        diff_piezo_drift = piezo_drift[1] - piezo_drift[0];                 // we need to keep the previous laser drift for drifting
     }
     first_drift_t = 60;                                                     // after 60 s start applying laser drift
     time(&t1);                                                              // start for correction
@@ -868,64 +871,69 @@ void *piezo_scan_thread(void *args) {
 
 void locking() {
 
-    // don't effect if target frequency is not set for wavemeter lock
-    if(WLM_LOCK.Value() && WLM_RUN.Value() && trg_freq < 1 && SERVER_RUN.Value()) {
-        WLM_LOCK.Set(false);
-    }
-
-    if(AUTO_LOCK.Value() && LOCK_STATE.Value() && 
-        (CAV_LOCK.Value() || (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value()))) {
-            
-        if(!scan_thread_running && ((CAV_LOCK.Value() && transmision < trans_lev) || 
-            (WLM_LOCK.Value() && freq_diff > std_freq_diff) ||
-            (WLM_LOCK.Value() && CUR_FEED.Value() && no_peaks_diff > std_no_peaks_diff))) {
-
-            lev++;
-            if(lev > 100 || freq_diff > std_freq_diff) {
-                
-                if(PIEZO_FEED.Value()) {
-
-                    if(drift_no >= 2) {
-                        diff_piezo_drift = piezo_drift[1] - piezo_drift[0]; // new - prevoius, laser drift
-                        if(fabs(diff_piezo_drift) < piezo_step) {           // to avoid large numbers in laser drift
-                            diff_piezo_drift = SIN(diff_piezo_drift) * piezo_step;
-                        }
-                        diff_t_drift = t_drift[1] - t_drift[0];             // stop - start, is duration of keeping lock
-                    } else {
-                        diff_piezo_drift = 1;                               // positive direction
-                        diff_t_drift = 1;
-                    }
-
-                    if(diff_t_drift > 10) {                                 // less than of 10s it is error, skip
-                        laser_drift = (diff_t_drift * piezo_step) / fabs(diff_piezo_drift);
-                    }
-                    pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
-                    scan_thread_running = true;                            // just to be sure for next checking condition
-                }
-                lev = 0;
-            }
-        } else {
-            
-            lev = 0;
+    // first: we don't want to use transfer lock, second: using transfer lock if it is already locked
+    if((!TRANSFER_LOCK.Value() && transfer_lock_state == 2) ||
+        (DIGI_RUN.Value() && TRANSFER_LOCK.Value() && transfer_lock_state == 1)) {
+        
+        // don't effect if target frequency is not set for wavemeter lock
+        if(WLM_LOCK.Value() && WLM_RUN.Value() && trg_freq < 1 && SERVER_RUN.Value()) {
+            WLM_LOCK.Set(false);
         }
 
-        // apply laser drift
-        if(!scan_thread_running && LASER_DRIFT.Value()) {
+        if(AUTO_LOCK.Value() && LOCK_STATE.Value() && 
+            (CAV_LOCK.Value() || (SERVER_RUN.Value() && WLM_RUN.Value() && WLM_LOCK.Value()))) {
+                
+            if(!scan_thread_running && ((CAV_LOCK.Value() && transmision < trans_lev) || 
+                (WLM_LOCK.Value() && freq_diff > std_freq_diff) ||
+                (WLM_LOCK.Value() && CUR_FEED.Value() && no_peaks_diff > std_no_peaks_diff))) {
 
-            time(&t2);
-            diff_t = t2 - t1;       // different time from applying last correction
+                lev++;
+                if(lev > 100 || freq_diff > std_freq_diff) {
+                    
+                    if(PIEZO_FEED.Value()) {
 
-            if(diff_t > first_drift_t && drift_no > 2) {
+                        if(drift_no >= 2) {
+                            diff_piezo_drift = piezo_drift[1] - piezo_drift[0]; // new - prevoius, laser drift
+                            if(fabs(diff_piezo_drift) < piezo_step) {           // to avoid large numbers in laser drift
+                                diff_piezo_drift = SIN(diff_piezo_drift) * piezo_step;
+                            }
+                            diff_t_drift = t_drift[1] - t_drift[0];             // stop - start, is duration of keeping lock
+                        } else {
+                            diff_piezo_drift = 1;                               // positive direction
+                            diff_t_drift = 1;
+                        }
 
-                float p_val = 0.0;
+                        if(diff_t_drift > 10) {                                 // less than of 10s it is error, skip
+                            laser_drift = (diff_t_drift * piezo_step) / fabs(diff_piezo_drift);
+                        }
+                        pthread_create(&thread_handler[1], NULL, piezo_scan_thread, NULL);
+                        scan_thread_running = true;                            // just to be sure for next checking condition
+                    }
+                    lev = 0;
+                }
+            } else {
+                
+                lev = 0;
+            }
 
-                p_val = CH1_OUT_OFFSET.Value() + SIN(diff_piezo_drift) * piezo_step;
-                send_out_gen1(p_val);
-                CH1_OUT_OFFSET.Set(p_val);
-                time(&t1);
-                first_drift_t = ceil(laser_drift * 1.3);         // after first drift, start correction every laser_drift * i
-                if(first_drift_t < 5) {
-                    first_drift_t = 5;
+            // apply laser drift
+            if(!scan_thread_running && LASER_DRIFT.Value()) {
+
+                time(&t2);
+                diff_t = t2 - t1;       // different time from applying last correction
+
+                if(diff_t > first_drift_t && drift_no > 2) {
+
+                    float p_val = 0.0;
+
+                    p_val = CH1_OUT_OFFSET.Value() + SIN(diff_piezo_drift) * piezo_step;
+                    send_out_gen1(p_val);
+                    CH1_OUT_OFFSET.Set(p_val);
+                    time(&t1);
+                    first_drift_t = ceil(laser_drift * 1.3);         // after first drift, start correction every laser_drift * i
+                    if(first_drift_t < 5) {
+                        first_drift_t = 5;
+                    }
                 }
             }
         }
@@ -1311,6 +1319,7 @@ void OnNewParams(void)
     // only connect to the server if we need wavemeter or transfer lock
     if(appState && !server_thread_running && SERVER_RUN.Value()) {
         SERVER_CON.Set(true);
+        transfer_lock_state = 2;
         // run thread for the server
         pthread_create(&thread_handler[0], NULL, server_thread, NULL);
     } else if(!SERVER_RUN.Value()) {
@@ -1325,6 +1334,7 @@ void OnNewParams(void)
         } else {
             LOCK_STATE.Set(true);
             drift_no = 0;
+            transfer_lock_state = 2;
         }
     }
 
