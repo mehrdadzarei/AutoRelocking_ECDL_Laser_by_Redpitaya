@@ -138,10 +138,6 @@
 
                 APP.state.socket_opened = true;
 
-                APP.params.local['in_command'] = { value: 'send_all_params' };
-                APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-                APP.params.local = {};
-
                 APP.loadParams();
                 APP.unexpectedClose = true;
                 APP.startTime = performance.now();
@@ -187,8 +183,7 @@
                         APP.parameterStack.push(receive.parameters);
                         if ((Object.keys(APP.params.orig).length == 0) && (Object.keys(receive.parameters).length == 0)) {
                             APP.params.local['in_command'] = { value: 'send_all_params' };
-                            APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-                            APP.params.local = {};
+                            APP.sendParams();
                         }
                     }
 
@@ -332,6 +327,10 @@
         const mean_ch1_txt = document.getElementById("mean_ch1");
         const mean_ch2_txt = document.getElementById("mean_ch2");
 
+        if('APP_RUN' in new_params) {
+            APP.running = new_params['APP_RUN'].value;
+        }
+        
         if(!APP.running || APP.params.orig['AUTO_LOCK'].value) {
             pzSl.disabled = true;
             pzN.disabled = true;
@@ -343,126 +342,171 @@
             curSl.disabled = false;
             curN.disabled = false;
         }
-        
-        var pzVal = new_params['CH1_OUT_OFFSET'].value;
-        if('CH1_OUT_OFFSET' in new_params && pzVal != undefined && pzVal != pzN.value && APP.params.orig['AUTO_LOCK'].value) {
-
-            pzSl.value = pzVal.toFixed(3);
-            pzN.value = pzVal.toFixed(3);
-        }
-
-        var curVal = new_params['CH2_OUT_OFFSET'].value;
-        if('CH2_OUT_OFFSET' in new_params && curVal != undefined && curVal != curN.value && APP.params.orig['AUTO_LOCK'].value) {
-
-            curSl.value = curVal.toFixed(3);
-            curN.value = curVal.toFixed(3);
-        }
-
-        var switch_mode_val = new_params['SWITCH_MODE'].value;
-        if('SWITCH_MODE' in new_params && switch_mode_val != undefined && switch_mode_val != $('#switch_mode').is(':checked')) {
-
-            // here attr function doesn't work to check and uncheck!?
-            document.getElementById("switch_mode").checked = switch_mode_val;
-        }
-        
-        var exp_auto_val = new_params['EXP_AUTO'].value;
-        if('EXP_AUTO' in new_params && exp_auto_val != undefined && exp_auto_val != APP.params.orig['EXP_AUTO'].value) {
-
-            // here attr function doesn't work to check and uncheck!?
-            document.getElementById("exp_auto").checked = exp_auto_val;
-            APP.params.orig['EXP_AUTO'] = { value: exp_auto_val };
-        }
-        
-        var exp_up_val = new_params['EXP_UP'].value;
-        if('EXP_UP' in new_params && exp_up_val != undefined && exp_up_val != exp_up.value) {
-
-            exp_up.value = exp_up_val;
-        }
-
-        var exp_down_val = new_params['EXP_DOWN'].value;
-        if('EXP_DOWN' in new_params && exp_down_val != undefined && exp_down_val != exp_down.value) {
-
-            exp_down.value = exp_down_val;
-        }
-
-        var transfer_lock_val = new_params['TRANSFER_LOCK'].value;
-        if('TRANSFER_LOCK' in new_params && transfer_lock_val != undefined && transfer_lock_val != $('#transfer_lock').is(':checked')) {
-
-            // here attr function doesn't work to check and uncheck!?
-            document.getElementById("transfer_lock").checked = transfer_lock_val;
-            if(APP.running && !transfer_lock_val) {
-                
-                if(new_params['ERROR_STATE'].value == 0) {
-                    digi_msg.innerHTML = 'There is no Peak for Locking on DigiLock, find the Peak manually first then apply Lock!';
-                } else {
-                    digi_msg.innerHTML = 'DigiLock is not Connected! Check parameters (IP, PORT) or restart DigiLock';
-                }
-                digi_msg.style.display = "block";
-            }
-        }
-
-        var wlm_lock_val = new_params['WLM_LOCK'].value;
-        if(APP.running && 'WLM_LOCK' in new_params && wlm_lock_val != undefined && 
-            wlm_lock_val != $('#wlm_lock').is(':checked')) {
-
-            if(APP.params.orig['TARGET_FREQUENCY'].value < 1) {
-
-                $("#wlm_lock").attr("checked", wlm_lock_val);
-                
-                if($.cookie('TARGET_FREQUENCY') !== undefined) {
-
-                    let txt = 'Target Frequency is NOT Set (last value was ';
-                    trg_msg.innerHTML = txt.concat(" ", $.cookie('TARGET_FREQUENCY'), ")");
-                }
-                trg_msg.style.display = "block";
-            }
-        }
 
         if(APP.running) {
             
-            var server_state = new_params['SERVER_CON'].value;
-            if(APP.params.orig['SERVER_RUN'].value && server_state) {
-                server_msg.style.display = "none";
-                // server_msg.innerHTML = "Connected!";
-            } else if(APP.params.orig['SERVER_RUN'].value && !server_state) { 
-                
-                server_msg.style.display = "block";
-                // server_msg.innerHTML = "Wavemeter is not Connected!";
-                $("#SERVER_RUN").css('display', 'block');
-                $("#SERVER_STOP").hide();
-                APP.params.orig['SERVER_RUN'] = { value: false };
+            if('SERVER_CON' in new_params) {
+                var server_state = new_params['SERVER_CON'].value;
+                if(APP.params.orig['SERVER_RUN'].value && server_state) {
+                    server_msg.style.display = "none";
+                    // server_msg.innerHTML = "Connected!";
+                } else if(APP.params.orig['SERVER_RUN'].value && !server_state) { 
+                    
+                    server_msg.style.display = "block";
+                    // server_msg.innerHTML = "Wavemeter is not Connected!";
+                    $("#SERVER_RUN").css('display', 'block');
+                    $("#SERVER_STOP").hide();
+                    APP.params.orig['SERVER_RUN'] = { value: false };
+                }
             }
             
-            var lock_state = new_params['LOCK_STATE'].value;
-            if(lock_state) {
-                graph_msg.style.display = "none";
-            } else {
-                graph_msg.style.display = "block";
-                $("#man_lock").click();
+            if('LOCK_STATE' in new_params) {
+                var lock_state = new_params['LOCK_STATE'].value;
+                if(lock_state) {
+                    graph_msg.style.display = "none";
+                } else {
+                    graph_msg.style.display = "block";
+                    $("#man_lock").click();
+                }
             }
+            
+            if('WLM_LOCK' in new_params) {
+                var wlm_lock_val = new_params['WLM_LOCK'].value;
+                if(wlm_lock_val != undefined && wlm_lock_val != $('#wlm_lock').is(':checked')) {
+
+                    if(APP.params.orig['TARGET_FREQUENCY'].value < 1) {
+
+                        $("#wlm_lock").attr("checked", wlm_lock_val);
+                        
+                        if($.cookie('TARGET_FREQUENCY') !== undefined) {
+
+                            let txt = 'Target Frequency is NOT Set (last value was ';
+                            trg_msg.innerHTML = txt.concat(" ", $.cookie('TARGET_FREQUENCY'), ")");
+                        }
+                        trg_msg.style.display = "block";
+                    }
+                }
+            }
+        
+            if('TRANSFER_LOCK' in new_params) {
+                
+                var transfer_lock_val = new_params['TRANSFER_LOCK'].value;
+                if(transfer_lock_val != undefined && transfer_lock_val != $('#transfer_lock').is(':checked')) {
+    
+                    // here attr function doesn't work to check and uncheck!?
+                    document.getElementById("transfer_lock").checked = transfer_lock_val;
+                    if(!transfer_lock_val) {
+                        
+                        digi_msg.innerHTML = 'There is no Peak for Locking on DigiLock, \
+                            change Peak to Peak Level or find the Peak manually then apply Lock!';
+                        $("#digi_msg").css('display', 'block');
+                    }
+                }
+            }
+            
+            if('CH1_OUT_OFFSET' in new_params) {
+                var pzVal = new_params['CH1_OUT_OFFSET'].value;
+                if(pzVal != undefined && pzVal != pzN.value && APP.params.orig['AUTO_LOCK'].value) {
+    
+                    pzSl.value = pzVal.toFixed(3);
+                    pzN.value = pzVal.toFixed(3);
+                }
+            }
+    
+            if('CH2_OUT_OFFSET' in new_params) {
+                var curVal = new_params['CH2_OUT_OFFSET'].value;
+                if(curVal != undefined && curVal != curN.value && APP.params.orig['AUTO_LOCK'].value) {
+    
+                    curSl.value = curVal.toFixed(3);
+                    curN.value = curVal.toFixed(3);
+                }
+            }
+            
+            if('EXP_UP' in new_params) {
+                var exp_up_val = new_params['EXP_UP'].value;
+                if(exp_up_val != undefined && exp_up_val != exp_up.value) {
+    
+                    exp_up.value = exp_up_val;
+                }
+            }
+    
+            if('EXP_DOWN' in new_params) {
+                var exp_down_val = new_params['EXP_DOWN'].value;
+                if(exp_down_val != undefined && exp_down_val != exp_down.value) {
+    
+                    exp_down.value = exp_down_val;
+                }
+            }
+            
+            if('EXP_AUTO' in new_params) {
+                var exp_auto_val = new_params['EXP_AUTO'].value;
+                if(exp_auto_val != undefined && exp_auto_val != APP.params.orig['EXP_AUTO'].value) {
+    
+                    // here attr function doesn't work to check and uncheck!?
+                    document.getElementById("exp_auto").checked = exp_auto_val;
+                    APP.params.orig['EXP_AUTO'] = { value: exp_auto_val };
+                }
+            }
+    
+            if('SWITCH_MODE' in new_params) {
+                var switch_mode_val = new_params['SWITCH_MODE'].value;
+                if(switch_mode_val != undefined && switch_mode_val != $('#switch_mode').is(':checked')) {
+    
+                    // here attr function doesn't work to check and uncheck!?
+                    document.getElementById("switch_mode").checked = switch_mode_val;
+                }
+            }
+        
+            if('DIGI_RUN' in new_params) {
+                
+                var digi_run_val = new_params['DIGI_RUN'].value;
+                if(digi_run_val != undefined && digi_run_val != APP.params.orig['DIGI_RUN'].value) {
+    
+                    // here attr function doesn't work to check and uncheck!?
+                    document.getElementById("digi_run").checked = digi_run_val;
+                    APP.params.orig['DIGI_RUN'] = { value: digi_run_val };
+                    if(!digi_run_val) {
+                        
+                        digi_msg.innerHTML = 'DigiLock is not Connected! Check parameters (IP, PORT) or restart DigiLock';
+                        $("#digi_msg").css('display', 'block');
+                    }
+                }
+            }
+    
+            if('MEAN_CH1' in new_params) {
+                var mean_ch1_val = new_params['MEAN_CH1'].value;
+                if(mean_ch1_val != undefined) {
+                    mean_ch1_txt.innerHTML = "Mean In1 [V]: ".concat(" ", mean_ch1_val.toFixed(3));
+                }
+            }
+    
+            if('MEAN_CH2' in new_params) {
+                var mean_ch2_val = new_params['MEAN_CH2'].value;
+                if(mean_ch2_val != undefined) {
+                    mean_ch2_txt.innerHTML = "Mean In2 [V]: ".concat(" ", mean_ch2_val.toFixed(3));
+                }
+            }
+
+            if('WAVELENGTH' in new_params) {
+                var wavel_val = new_params['WAVELENGTH'].value;
+                if(wavel_val != undefined) {
+                    wavel_txt.innerHTML = "Wavelength [nm]: ".concat(" ", wavel_val);
+                }
+            }
+    
+            if('FREQUENCY' in new_params) {
+                var freq_val = new_params['FREQUENCY'].value;
+                if(freq_val != undefined) {
+                    freq_txt.innerHTML = "Frequency [THz]: ".concat(" ", freq_val);
+                    APP.params.orig['FREQ'] = { value: freq_val };
+                }
+            }
+
         }else {
             trg_msg.style.display = "none";
             server_msg.style.display = "none";
             graph_msg.style.display = "none";
-            digi_msg.style.display = "none";
-        }
-        
-        var wavel_val = new_params['WAVELENGTH'].value;
-        if('WAVELENGTH' in new_params && wavel_val != undefined) {
-            wavel_txt.innerHTML = "Wavelength [nm]: ".concat(" ", wavel_val);
-        }
-        var freq_val = new_params['FREQUENCY'].value;
-        if('FREQUENCY' in new_params && freq_val != undefined) {
-            freq_txt.innerHTML = "Frequency [THz]: ".concat(" ", freq_val);
-            APP.params.orig['FREQ'] = { value: freq_val };
-        }
-        var mean_ch1_val = new_params['MEAN_CH1'].value;
-        if('MEAN_CH1' in new_params && mean_ch1_val != undefined) {
-            mean_ch1_txt.innerHTML = "Mean In1 [V]: ".concat(" ", mean_ch1_val.toFixed(3));
-        }
-        var mean_ch2_val = new_params['MEAN_CH2'].value;
-        if('MEAN_CH2' in new_params && mean_ch2_val != undefined) {
-            mean_ch2_txt.innerHTML = "Mean In2 [V]: ".concat(" ", mean_ch2_val.toFixed(3));
+            $("#digi_msg").css('display', 'none');
         }
     };
 
@@ -820,7 +864,6 @@
             
             $("#SERVER_RUN").css('display', 'block');
             $("#SERVER_STOP").hide();
-            $("#server_info").css('display', 'none');
             APP.params.local['SERVER_RUN'] = { value: false };
             APP.params.orig['SERVER_RUN'] = { value: false };
         } else {
@@ -828,14 +871,12 @@
 
                 $("#SERVER_RUN").hide();
                 $("#SERVER_STOP").css('display', 'block');
-                $("#server_info").css('display', 'block');
                 APP.params.local['SERVER_RUN'] = { value: true };
                 APP.params.orig['SERVER_RUN'] = { value: true };
             } else {
                 
                 $("#SERVER_RUN").css('display', 'block');
                 $("#SERVER_STOP").hide();
-                $("#server_info").css('display', 'none');
                 APP.params.local['SERVER_RUN'] = { value: false };
                 APP.params.orig['SERVER_RUN'] = { value: false };
             }
@@ -1166,6 +1207,28 @@
             port_digi.value = $.cookie('DIGI_PORT');
         }
 
+        if($.cookie('DIGI_RUN') === undefined) {
+            
+            $("#digi_run").attr("checked", false);
+            $("#digi_msg").css('display', 'none');
+            APP.params.local['DIGI_RUN'] = { value: false };
+            APP.params.orig['DIGI_RUN'] = { value: false };
+        } else {
+
+            $("#digi_msg").css('display', 'none');
+            if($.cookie('DIGI_RUN') === "true") {
+
+                $("#digi_run").attr("checked", true);
+                APP.params.local['DIGI_RUN'] = { value: true };
+                APP.params.orig['DIGI_RUN'] = { value: true };
+            } else {
+                
+                $("#digi_run").attr("checked", false);
+                APP.params.local['DIGI_RUN'] = { value: false };
+                APP.params.orig['DIGI_RUN'] = { value: false };
+            }
+        }
+
         if($.cookie('PTP_LVL') === undefined) {
             APP.params.local['PTP_LVL'] = { value: 0.04 };
             ptp_lvl.value = 0.04;
@@ -1174,8 +1237,7 @@
             ptp_lvl.value = $.cookie('PTP_LVL');
         }
 
-        APP.ws.send(JSON.stringify({ parameters: APP.params.local }));
-        APP.params.local = {};
+        APP.sendParams();
     };
 
 }(window.APP = window.APP || {}, jQuery));
@@ -1253,6 +1315,7 @@ $(function() {
         $(this).hide();
         $("#SERVER_STOP").css('display', 'block');
         $("#server_info").css('display', 'block');
+        $("#digi_msg").css('display', 'none');
         server_msg.style.display = "none";
         $.cookie('SERVER_RUN', true);
         APP.params.orig['SERVER_RUN'] = { value: true };
@@ -1300,11 +1363,10 @@ $(function() {
         
         $(this).hide();
         $("#APP_STOP").css('display', 'block');
-        $("#server_info").css('display', 'none');
+        $("#digi_msg").css('display', 'none');
         APP.params.local['APP_RUN'] = { value: true };
         APP.sendParams();
         APP.signalStack = [];
-        APP.running = true;
         setInterval(APP.guiHandler, 40);
     });
 
@@ -1315,7 +1377,6 @@ $(function() {
         $("#APP_RUN").css('display', 'block');
         APP.params.local['APP_RUN'] = { value: false };
         APP.sendParams();
-        APP.running = false;
     });
 
     $("#CH1_IN_SHOW").click(function() {
@@ -1596,7 +1657,7 @@ $(function() {
 
     $("#transfer_lock").click(function() {
 
-        digi_msg.style.display = "none";
+        $("#digi_msg").css('display', 'none');
         var checkBox = $(this).is(':checked');
         $.cookie('TRANSFER_LOCK', checkBox);
         
@@ -1737,6 +1798,16 @@ $(function() {
         APP.sendParams();
     }
 
+    $("#digi_run").click(function() {
+
+        var checkBox = $(this).is(':checked');
+        $("#digi_msg").css('display', 'none');
+        $.cookie('DIGI_RUN', checkBox);
+        APP.params.orig['DIGI_RUN'] = { value: checkBox };
+        APP.params.local['DIGI_RUN'] = { value: checkBox };
+        APP.sendParams();
+    });
+
     ptp_lvl.onchange = function() {
         
         $.cookie('PTP_LVL', this.value);
@@ -1849,6 +1920,7 @@ $(function() {
 
         $.cookie('DIGI_IP', ip_digi.value);
         $.cookie('DIGI_PORT', port_digi.value);
+        $.cookie('DIGI_RUN', APP.params.orig['DIGI_RUN'].value);
         $.cookie('PTP_LVL', ptp_lvl.value);
         
         APP.unexpectedClose = false;

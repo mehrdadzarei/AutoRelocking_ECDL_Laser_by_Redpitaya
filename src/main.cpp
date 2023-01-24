@@ -105,7 +105,8 @@ bool expo_auto = false;
 int exp_up = 2;
 int exp_down = 0;
 
-bool transfer_lock = false;
+bool digi_run = false;
+bool digi_lock = false;
 int transfer_lock_state = 2;        // 0 = there is no peak, 1 = locked, 2 = hold on it is locking
 
 //Signals
@@ -116,7 +117,7 @@ CFloatSignal ch2_avg("ch2_avg", SIGNAL_SIZE_DEFAULT, 0.0f);
 CFloatSignal spectrum_data("spectrum_data", SIGNAL_SIZE_DEFAULT, 0.0f);
 
 // Parameters
-CBooleanParameter APP_RUN("APP_RUN", CBaseParameter::RW, false, 0);
+CBooleanParameter APP_RUN("APP_RUN", CBaseParameter::RWSA, false, 0);
 CBooleanParameter AUTO_LOCK("AUTO_LOCK", CBaseParameter::RW, false, 0);
 CBooleanParameter LOCK_STATE("LOCK_STATE", CBaseParameter::RWSA, true, 0);
 CBooleanParameter SERVER_RUN("SERVER_RUN", CBaseParameter::RW, false, 0);
@@ -144,7 +145,6 @@ CBooleanParameter PIEZO_FEED("PIEZO_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter CUR_FEED("CUR_FEED", CBaseParameter::RW, false, 0);
 CBooleanParameter LASER_DRIFT("LASER_DRIFT", CBaseParameter::RW, false, 0);
 CBooleanParameter TRANSFER_LOCK("TRANSFER_LOCK", CBaseParameter::RWSA, false, 0);
-CIntParameter ERROR_STATE("ERROR_STATE", CBaseParameter::RWSA, 1, 0, 0, 10);
 
 CFloatParameter CH1_OUT_OFFSET("CH1_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
 CFloatParameter CH2_OUT_OFFSET("CH2_OUT_OFFSET", CBaseParameter::RWSA, 0, 0, -20, 20);
@@ -161,6 +161,7 @@ CBooleanParameter SWITCH_MODE("SWITCH_MODE", CBaseParameter::RWSA, true, 0);
 
 CStringParameter DIGI_IP("DIGI_IP", CBaseParameter::RW, "192.168.0.175", 0);
 CIntParameter DIGI_PORT("DIGI_PORT", CBaseParameter::RW, 60001, 0, 0, 100000);
+CBooleanParameter DIGI_RUN("DIGI_RUN", CBaseParameter::RWSA, false, 0);
 CFloatParameter PTP_LVL("PTP_LVL", CBaseParameter::RW, 0.04, 0, 0, 2000);
 
 CFloatParameter MEAN_CH1("MEAN_CH1", CBaseParameter::RWSA, 0.0, 0, -20, 20);
@@ -402,13 +403,26 @@ int my_recv() {
             if(send_digi_state) {
 
                 // check if there is no new value then apply
-                if(TRANSFER_LOCK.Value() == transfer_lock) {
-                    msg_int = obj.at("TRANSFER_LOCK").as_int();
-                    if(msg_int != 2) {      // no update if it is 2
-                        TRANSFER_LOCK.Set(msg_int == 1 ? true:false);
+                if(DIGI_RUN.Value() == digi_run) {
+                    
+                    msg_int = obj.at("DIGI_RUN").as_int();
+                    if(msg_int != 2) {      // connecting to DigiLock if it is 2
+                        
+                        DIGI_RUN.Set(msg_int == 1 ? true:false);
+
+                        if(msg_int == 1) {
+
+                            // check if there is no new value then apply
+                            if(TRANSFER_LOCK.Value() == digi_lock) {
+                                transfer_lock_state = obj.at("TRANSFER_LOCK").as_int();
+                                if(transfer_lock_state != 2) {      // locking if it is 2
+                                    TRANSFER_LOCK.Set(transfer_lock_state == 1 ? true:false);
+                                }
+                            }
+                        } else {
+                            transfer_lock_state = 0;
+                        }
                     }
-                    transfer_lock_state = obj.at("ERROR_STATE").as_int();
-                    ERROR_STATE.Set(transfer_lock_state);
                 }
 
                 send_digi_state = false;
@@ -517,21 +531,22 @@ void *server_thread(void *args) {
                 "\"WLM_RUN\": %d, \"CH\": %d, \"EXP_UP\": %d, \"EXP_DOWN\": %d, \"EXP_AUTO\": %d, \"SWITCH_MODE\": %d, \"PREC\": %d, \"WAVEL\": %d, \"FREQ\": %d, \"SPEC\": %d", 
                 WLM_RUN.Value(), WLM_CH.Value(), exp_up, exp_down, expo_auto, switch_mode, PREC.Value(), true, true, true);
 
-            if(TRANSFER_LOCK.Value()) {
+            if(DIGI_RUN.Value()) {
                 msg_send1[strlen(msg_send1)] = ',';
                 msg_send1[strlen(msg_send1)] = ' ';
             }
             send_wlm_state = true;
         }
 
-        if(TRANSFER_LOCK.Value()) {
+        if(DIGI_RUN.Value()) {
             
-            transfer_lock = TRANSFER_LOCK.Value();
+            digi_run = DIGI_RUN.Value();
+            digi_lock = TRANSFER_LOCK.Value();
             
             // use \"%s\" for wraping ip around "" to avoid error
             sprintf((char*)msg_send2, 
-                "\"TRANSFER_LOCK\": %d, \"DIGI_IP\": \"%s\", \"DIGI_PORT\": %d, \"PTP_LVL\": %f", 
-                transfer_lock, DIGI_IP.Value().c_str(), DIGI_PORT.Value(), PTP_LVL.Value());
+                "\"DIGI_RUN\": %d, \"TRANSFER_LOCK\": %d, \"DIGI_IP\": \"%s\", \"DIGI_PORT\": %d, \"PTP_LVL\": %f", 
+                digi_run, digi_lock, DIGI_IP.Value().c_str(), DIGI_PORT.Value(), PTP_LVL.Value());
 
             send_digi_state = true;
         }
@@ -1276,6 +1291,7 @@ void OnNewParams(void)
 
     DIGI_IP.Update();
     DIGI_PORT.Update();
+    DIGI_RUN.Update();
     PTP_LVL.Update();
 
     // Run or stop APP
