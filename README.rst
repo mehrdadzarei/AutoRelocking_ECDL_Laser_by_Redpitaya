@@ -1,9 +1,10 @@
-Template for the Read the Docs tutorial
+Auto Relocking ECDL by Redpitaya
 =======================================
 
-This GitHub template includes fictional Python library
-with some basic Sphinx docs.
+This project is for automatically relocking the External Cavity Diode Lasers (ECDLs) 
+by wavemeter and/or cavity transmission using Red Pitaya.
 
-Read the tutorial here:
 
-https://docs.readthedocs.io/en/stable/tutorial/
+.. image:: doc/img/Auto Relocking Rydberg Laser.png
+  :width: 400
+  :alt: Schematic diagram of the project
