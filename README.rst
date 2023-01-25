@@ -12,21 +12,35 @@ by wavemeter and/or cavity transmission using Red Pitaya.
 Where we can Use this Web Application
 ###########################
 
+* Manual Mode
+
+  * Controlling Piezo Voltage of the Laser Driver
+  * Controlling Current Voltage of the Laser Driver
+  * Monitoring Wavemeter
+  * Monitoring Cavity Transmission
+
 * Automatic Mode
 
   * Relocking ECDLs only by Cavity Transmission
   * Relocking ECDLs only by Wavemeter
   * Relocking ECDLs by Cavity Transmission and/or Wavemeter
   * Relocking Transfer Cavity by DigiLock
-
-* Manual Mode
-
-  * Controlling Piezo Voltage of the Laser Driver
-  * Controlling Current Voltage of the Laser Driver
   * Monitoring Wavemeter
+  * Monitoring Cavity Transmission
 
 .. note::
+
+    If you want to use Wavemeter or DigiLock, Server should be running on the Wavemeter's PC
+
+
+Server on the Wavemeter's PC
+###########################
+Server have to be run on the PC which the Wavemeter is connected on
+
+.. note::
+
+    For downlaoding the server application click on `Wavemeter API Server <https://github.com/mehrdadzarei/Wavemeter_API_Server_by_Python>`
     
-    If you want to use Wavemeter or DigiLock, Server should be running on Wavemeter PC
+
 
 
