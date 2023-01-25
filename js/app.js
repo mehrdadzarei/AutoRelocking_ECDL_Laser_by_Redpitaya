@@ -35,7 +35,7 @@
     APP.running = false;
     APP.startTime = 0;
     APP.config = {};
-    APP.config.app_id = 'relocking';//'scopegenpro';'relocking'
+    APP.config.app_id = 'AutoRelocking_ECDL_Laser_by_Redpitaya';    //have to be the folder name
     APP.config.start_app_url = window.location.origin + '/bazaar?start=' + APP.config.app_id;
     APP.config.stop_app_url = window.location.origin + '/bazaar?stop=' + APP.config.app_id;
     APP.config.socket_url = 'ws://' + window.location.host + '/wss';
@@ -1131,8 +1131,8 @@
         }
 
         if($.cookie('PREC') === undefined) {
-            $("#prec").val(3);
-            APP.params.local['PREC'] = { value: 3 };
+            $("#prec").val(5);
+            APP.params.local['PREC'] = { value: 5 };
         } else {
             $("#prec").val($.cookie('PREC'));
             APP.params.local['PREC'] = { value: $.cookie('PREC') };
