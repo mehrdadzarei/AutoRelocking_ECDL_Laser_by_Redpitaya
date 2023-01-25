@@ -13,17 +13,20 @@ Where we can Use this Web Application
 ###########################
 
 * Automatic Mode
+
   * Relocking ECDLs only by Cavity Transmission
   * Relocking ECDLs only by Wavemeter
   * Relocking ECDLs by Cavity Transmission and/or Wavemeter
   * Relocking Transfer Cavity by DigiLock
 
 * Manual Mode
+
   * Controlling Piezo Voltage of the Laser Driver
   * Controlling Current Voltage of the Laser Driver
   * Monitoring Wavemeter
 
 .. note::
+    
     If you want to use Wavemeter or DigiLock, Server should be running on Wavemeter PC
 
 
