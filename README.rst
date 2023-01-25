@@ -2,10 +2,10 @@ Auto Relocking ECDL by Redpitaya
 =======================================
 
 Auto Relocking ECDL by Redpitaya
-###
+###########
 
 Auto Relocking ECDL by Redpitaya
-***
+***********
 
 This project is for automatically relocking the External Cavity Diode Lasers (ECDLs) 
 by wavemeter and/or cavity transmission using Red Pitaya.
