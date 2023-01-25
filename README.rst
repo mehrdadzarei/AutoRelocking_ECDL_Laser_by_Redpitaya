@@ -39,7 +39,9 @@ Server have to be run on the PC which the Wavemeter is connected on
 
 .. note::
 
-    For downlaoding the server application click on `Wavemeter API Server <https://github.com/mehrdadzarei/Wavemeter_API_Server_by_Python>`_
+    For downlaoding the server application click on `Wavemeter API Server`_.
+
+.. _Wavemeter API Server: https://github.com/mehrdadzarei/Wavemeter_API_Server_by_Python
     
 
 
