@@ -5,6 +5,6 @@ This project is for automatically relocking the External Cavity Diode Lasers (EC
 by wavemeter and/or cavity transmission using Red Pitaya.
 
 
-.. image:: doc/img/Auto Relocking Rydberg Laser.png
+.. image:: doc/img/AutoRelockingRydbergLaser.png
   :width: 400
   :alt: Schematic diagram of the project
