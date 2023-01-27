@@ -74,7 +74,7 @@ for spectroscopy. Part of the red light after SFG is going to the wavemeter from
 the wavelength and to the transfer cavity to be locked by FALC driver. Transfer cavity is locked also to 689 nm 
 laser which is very stable by DigiLock driver.
 |
-.. figure:: doc/img/fig3.jpg
+.. figure:: doc/img/fig3.png
   :width: 1000
   :align: center
   :alt: Schematic diagram of the project.
