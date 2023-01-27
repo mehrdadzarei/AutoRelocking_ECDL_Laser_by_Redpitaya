@@ -6,11 +6,10 @@ wavemeter and/or cavity transmission using Redpitaya.
 
 
 Table of Contents
+****************************************
 
-
-.. contents:: Table of Contents
+.. contents::
     :depth: 3
-    :numbered:
 
 
 Overview
