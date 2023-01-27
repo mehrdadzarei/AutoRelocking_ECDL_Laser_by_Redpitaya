@@ -61,7 +61,8 @@ locked to another stable laser (689 nm) with DigiLock driver from Toptica compan
 transfer cavity that transfer the stability of the 689 nm to the Rydberg laser. The problem is that 
 these kind of lock are not stable for long time and laser would be out of lock because of electronic 
 noises, mechanical noises, temperature drift, and …. Therefore I developed a web application for 
-Redpitaya to be able manually and automatically control the piezo and current driver of the Rydberg laser. 
+Redpitaya to be able manually and automatically control the piezo and current driver of the Rydberg laser.
+ 
 |
 
 Schematic diagram of this project is shown in the Fig. 3. As you see we have two ECDLs (1070 nm and 1550 nm) 
