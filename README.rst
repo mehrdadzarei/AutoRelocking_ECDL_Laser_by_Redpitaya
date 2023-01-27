@@ -29,9 +29,6 @@ to create different patterns of Sr atoms like Fig. 2.
 
 .. 
   for new line write |
-|
-
-.. 
   for images with caption write figure
   without caption use image
 
@@ -106,7 +103,7 @@ Redpitaya installed on an amplifier board which is providing power supply also f
 its connections is shown in the Fig. 4, PD signal is connected to the amplifier (we are amplifying the signal 25 times) 
 then is going to the input 1 of the redpitaya. Output 1 is dedicated to send feedback to the piezo controller and 
 output 2 is for current controller. Input 2 is just to monitoring any other signal if you need.
-|
+
 .. figure:: doc/img/fig4.jpg
   :width: 1000
   :align: center
@@ -135,7 +132,7 @@ Laser driver is shown in the Fig. 5, as you see for applying feedback from Redpi
 an analog interface, maybe in your case is different. As the feedback voltage is limited to 1 V, perhaps is 
 not enough to scan whole range of frequency to find target frequency, therefore first find the target frequency 
 manually by scan controller which is signed in the Fig. 5.
-|
+
 .. figure:: doc/img/fig5.jpg
   :width: 1000
   :align: center
