@@ -170,7 +170,7 @@ web application you have to set these IP and Port number which the server is lis
 Run the DigiLock software
 ########################################
 
-DigiLock software for locking transfer cavity to the 689 nm laser should be running and the IP and 
+DigiLock software for locking transfer cavity to the 689 nm laser should be running. And the IP and 
 Port number on the DigiLock software which is shown in the Fig. 7 should be set in the web application 
 to let the Redpitaya to remotely control and lock the cavity.
 
@@ -280,6 +280,7 @@ from the European Union’s Horizon 2020 Research and Innovation Program No 8204
 This project has received funding from the European Union’s Horizon 2020 research and innovation program under 
 grant agreement No 860579 (MoSaiQC project). The project is partially performed at the National Laboratory 
 FAMO (KL FAMO) in Toruń, Poland and were supported by a subsidy from the Polish Ministry of Science and Higher Education.
+
 |
 I am a PhD student at the Nicolaus Copernicus University under supervision Michal Zawada, but this project has been done 
 at the University of Amsterdam in the Strontium quantum gas group under supervision Florian Schreck during my secondment. 
