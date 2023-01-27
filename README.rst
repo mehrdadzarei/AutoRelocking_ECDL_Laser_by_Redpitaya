@@ -9,7 +9,7 @@ Table of Contents
 ****************************************
 
 .. contents::
-    :depth: 2
+    :depth: 3
     :numbered:
 
 
