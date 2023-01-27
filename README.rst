@@ -35,6 +35,7 @@ to create different patterns of Sr atoms like Fig. 2.
 
 .. figure:: doc/img/fig1.jpg
   :width: 1000
+  :align: center
   :alt: A view of the Sr Optical Tweezer Machine.
   :figclass: align-center
 
@@ -42,6 +43,7 @@ to create different patterns of Sr atoms like Fig. 2.
 
 .. figure:: doc/img/fig2.jpg
   :width: 600
+  :align: center
   :alt: Different patterns of Sr atoms, trapped in optical tweezers.
   :figclass: align-center
 
