@@ -37,17 +37,16 @@ to create different patterns of Sr atoms like Fig. 2.
   :width: 1000
   :align: center
   :alt: A view of the Sr Optical Tweezer Machine.
-  :figclass: align-center
-
+  
   Fig. 1: A view of the Sr Optical Tweezer Machine.
 
-.. image:: doc/img/fig2.jpg
+.. figure:: doc/img/fig2.jpg
   :width: 600
   :align: center
   :alt: Different patterns of Sr atoms, trapped in optical tweezers.
   
-Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
-|
+  Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
+
 At the end after trapping Sr atoms in optical tweezers, we do the Rydberg spectroscopy by 
 shining the Rydberg laser with 316.5 nm wavelength on the Sr atoms.
 
