@@ -33,12 +33,12 @@ to create different patterns of Sr atoms like Fig. 2.
   for images with caption write figure
   without caption use image
 
-.. figure:: doc/img/fig1.jpg
+.. image:: doc/img/fig1.jpg
   :width: 1000
   :alt: A view of the Sr Optical Tweezer Machine.
   Fig. 1: A view of the Sr Optical Tweezer Machine.
 
-.. figure:: doc/img/fig2.jpg
+.. image:: doc/img/fig2.jpg
   :width: 400
   :alt: Different patterns of Sr atoms, trapped in optical tweezers.
   Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
