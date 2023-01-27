@@ -5,7 +5,8 @@ This project is for automatically relocking the External Cavity Diode Lasers (EC
 wavemeter and/or cavity transmission using Redpitaya.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
+   :numbered:
 
 Overview
 ****************************************
