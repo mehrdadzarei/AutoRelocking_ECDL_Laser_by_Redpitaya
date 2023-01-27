@@ -25,17 +25,23 @@ less than that during laser cooling and magneto optical trapping (MOT). After co
 are trapped in optical tweezers, controlled by spatial light modulator (SLM) and acousto-optic deflector (AOD) 
 to create different patterns of Sr atoms like Fig. 2.
 
+.. 
+  for new line write |
 |
 
-.. image:: doc/img/fig1.jpg
+.. 
+  for images with caption write figure
+  without caption use image
+  
+..  figure:: doc/img/fig1.jpg
   :width: 1000
   :alt: A view of the Sr Optical Tweezer Machine.
-Fig. 1: A view of the Sr Optical Tweezer Machine.
+  Fig. 1: A view of the Sr Optical Tweezer Machine.
 
-.. image:: doc/img/fig2.jpg
+..  figure:: doc/img/fig2.jpg
   :width: 400
   :alt: Different patterns of Sr atoms, trapped in optical tweezers.
-Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
+  Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
 
 At the end after trapping Sr atoms in optical tweezers, we do the Rydberg spectroscopy by 
 shining the Rydberg laser with 316.5 nm wavelength on the Sr atoms.
