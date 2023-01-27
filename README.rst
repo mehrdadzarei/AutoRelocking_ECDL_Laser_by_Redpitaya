@@ -24,7 +24,7 @@ you see a small view of this project, here Sr atoms are cooled down to level of 
 less than that during laser cooling and magneto optical trapping (MOT). After cooling down, Sr atoms 
 are trapped in optical tweezers, controlled by spatial light modulator (SLM) and acousto-optic deflector (AOD) 
 to create different patterns of Sr atoms like Fig. 2.
-.. new line with |
+
 |
 
 .. image:: doc/img/fig1.jpg
