@@ -25,13 +25,13 @@ less than that during laser cooling and magneto optical trapping (MOT). After co
 are trapped in optical tweezers, controlled by spatial light modulator (SLM) and acousto-optic deflector (AOD) 
 to create different patterns of Sr atoms like Fig. 2.
 
-.. image:: doc/img/fig1.jpg
+.. figure:: doc/img/fig1.jpg
   :width: 1000
   :alt: A view of the Sr Optical Tweezer Machine.
 Fig. 1: A view of the Sr Optical Tweezer Machine.
 
-.. image:: doc/img/fig2.jpg
-  :width: 400
+.. figure:: doc/img/fig2.jpg
+  :width: 800
   :alt: Different patterns of Sr atoms, trapped in optical tweezers.
 Fig. 2: Different patterns of Sr atoms, trapped in optical tweezers.
 
