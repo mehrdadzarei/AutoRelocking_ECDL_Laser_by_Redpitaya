@@ -141,20 +141,115 @@ manually by scan controller which is signed in the Fig. 5.
   Fig. 5: Laser driver and connected feedback signal from Redpitaya.
 
 
+Run the Server on the Wavemeter’s PC
+########################################
+
+First of all run the server on the wavemeter’s PC, after running the server a message is written 
+that server is running on a specific IP and Port number which have to be set in the batch file which 
+run the server file. In the Fig. 6 a running server is shown. For connecting to the server from 
+web application you have to set these IP and Port number which the server is listening on it on the web application.
+
+.. figure:: doc/img/fig6.jpg
+  :width: 1000
+  :align: center
+  :alt: Running server on the wavemeter's PC.
+  
+  Fig. 6: Running server on the wavemeter's PC.
+
+.. note::
+
+    If you want to use Wavemeter or DigiLock, Server have to be running on the Wavemeter's PC.
+
+.. note::
+
+    For downloading the server application click on `Wavemeter API Server`_.
+.. _Wavemeter API Server: https://github.com/mehrdadzarei/Wavemeter_API_Server_by_Python
 
 
+Run the DigiLock software
+########################################
 
-Where we can Use this Web Application
-###########################
+DigiLock software for locking transfer cavity to the 689 nm laser should be running and the IP and 
+Port number on the DigiLock software which is shown in the Fig. 7 should be set in the web application 
+to let the Redpitaya to remotely control and lock the cavity.
 
-* Manual Mode
+.. figure:: doc/img/fig7.jpg
+  :width: 1000
+  :align: center
+  :alt: DigiLock software and its IP and Port number.
+  
+  Fig. 7: DigiLock software and its IP and Port number.
+
+
+Run the program on the web application
+########################################
+
+After setting initial parameters on the web application run the program to monitor cavity transmission and 
+wavemeter's information. The algorithm operates in two modes: Either in manual mode or in automatic mode, 
+when the laser is kept on the lock frequency. There are two different types of input signals which are selectable: 
+cavity transmission and/or wavemeter signal. After processing the signals by the software, appropriate feedback is 
+sent to the piezo and/or current controller of the laser driver. The relocking algorithms verify the lock by 
+comparing the value of the cavity transmission signal and/or by comparing the frequency difference between preset 
+frequency and frequency measured by the wavemeter. If one of those values is below a predefined threshold, 
+the algorithm starts scanning the piezo to find the target frequency.
+
+.. note::
+
+    For setting transmission level in the situation which we want to lock the laser to the cavity, this value should be 
+    set in the level that if transmission (Mean In1 in the Fig. 8) get lower than that, the algorithm start relocking 
+    the laser. If the transmission voltage gap when laser is locked and out of lock is small, change the x range and y range 
+    which is shown in the Fig. 8 to have a stable average signal (Mean In1).
+
+.. figure:: doc/img/fig8.jpg
+  :width: 1000
+  :align: center
+  :alt: Setting x and y range to stable transmission signal.
+  
+  Fig. 8: Setting x and y range to stable transmission signal.
+
+In the Fig. 9 there is a whole view of the web application developed for this project, in the Fig. 10, cavity transmission 
+on the camera is shown and also locked cavity by DigiLock which all are automatically done by web application running on 
+the Redpitaya.
+
+.. note::
+
+    To download the source code of web application click on `Auto Relocking Web Application`_.
+.. _Auto Relocking Web Application: https://github.com/mehrdadzarei/AutoRelocking_ECDL_Laser_by_Redpitaya
+
+.. note::
+
+    To see a full instruction for developing this web application click on `Manual`_.
+.. _Manual: https://github.com/mehrdadzarei/AutoRelocking_ECDL_Laser_by_Redpitaya/tree/master/doc
+
+.. figure:: doc/img/fig9.jpg
+  :width: 1000
+  :align: center
+  :alt: Web application running on the Redpitaya.
+  
+  Fig. 9: Web application running on the Redpitaya.
+
+.. figure:: doc/img/fig10.jpg
+  :width: 1000
+  :align: center
+  :alt: Locked Rydberg laser and cavity by web application.
+  
+  Fig. 10: Locked Rydberg laser and cavity by web application.
+
+
+Where is used this Web Application
+****************************************
+
+This application is used wherever you want to fully control the ECDLs. This web application works in two mode, 
+manual and automatic mode. In each mode it is usable for:
+
+#. Manual Mode
 
   * Controlling Piezo Voltage of the Laser Driver
   * Controlling Current Voltage of the Laser Driver
   * Monitoring Wavemeter
   * Monitoring Cavity Transmission
 
-* Automatic Mode
+#. Automatic Mode
 
   * Relocking ECDLs only by Cavity Transmission
   * Relocking ECDLs only by Wavemeter
@@ -168,16 +263,23 @@ Where we can Use this Web Application
     If you want to use Wavemeter or DigiLock, Server should be running on the Wavemeter's PC
 
 
-Server on the Wavemeter's PC
-###########################
-Server have to be run on the PC which the Wavemeter is connected on
+Caution
+****************************************
 
-.. note::
-
-    For downloading the server application click on `Wavemeter API Server`_.
-
-.. _Wavemeter API Server: https://github.com/mehrdadzarei/Wavemeter_API_Server_by_Python
-    
+Please before applying any voltage on your laser driver, first monitor them on the oscilloscope and limit 
+the range based on the feature of your laser driver. **The author will not take any responsibility for damaged lasers**.
 
 
+Acknowledgment
+****************************************
+
+This project 18SIB05 ROCIT has received funding from the EMPIR program co-financed by the Participating States 
+and from the European Union’s Horizon 2020 research and innovation program. This project has received funding 
+from the European Union’s Horizon 2020 Research and Innovation Program No 820404, (iqClock project). 
+This project has received funding from the European Union’s Horizon 2020 research and innovation program under 
+grant agreement No 860579 (MoSaiQC project). The project is partially performed at the National Laboratory 
+FAMO (KL FAMO) in Toruń, Poland and were supported by a subsidy from the Polish Ministry of Science and Higher Education.
+|
+I am a PhD student at the Nicolaus Copernicus University under supervision Michal Zawada, but this project has been done 
+at the University of Amsterdam in the Strontium quantum gas group under supervision Florian Schreck during my secondment. 
 
