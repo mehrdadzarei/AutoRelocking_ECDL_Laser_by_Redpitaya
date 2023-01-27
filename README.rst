@@ -15,14 +15,14 @@ is used in Strontium (Sr) Optical Tweezer Machine for quantum computing and simu
 But it can be used in different cold atom applications, such as optical atomic clocks, 
 transportable optical clocks, future satellite missions, space missions, and 
 wherever you want to fully control the ECDLs. First of all I will explain a little bit 
-about this machine then will explain how this web application is used to improved this machine.
+about this machine then will explain how this web application is used to improve this machine.
 
 
 Introduction
 ****************************************
 
 We are working on Sr Optical Tweezer Machine for quantum computing and simulation. In the Fig. 1 
-you see a small view of this project, here Sr atoms are cooled down to level of micro kelvin or even 
+you see a small view of this project. The Sr atoms are cooled down to level of micro kelvin or even 
 less than that during laser cooling and magneto optical trapping (MOT). After cooling down, Sr atoms 
 are trapped in optical tweezers, controlled by spatial light modulator (SLM) and acousto-optic deflector (AOD) 
 to create different patterns of Sr atoms like Fig. 2.
@@ -63,6 +63,7 @@ these kind of lock are not stable for long time and laser would be out of lock b
 noises, mechanical noises, temperature drift, and …. Therefore I developed a web application for 
 Redpitaya to be able manually and automatically control the piezo and current driver of the Rydberg laser. 
 |
+
 Schematic diagram of this project is shown in the Fig. 3. As you see we have two ECDLs (1070 nm and 1550 nm) 
 controlled by laser driver from Toptica company for this project. Laser light from ECDLs would be amplify with 
 fiber amplifiers to have more than of watts intensity to send them to sum frequency generation (SFG) to have 
