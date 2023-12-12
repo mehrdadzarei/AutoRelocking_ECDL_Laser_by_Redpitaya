@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: Auto Relocking ECDLs, by RedPitaya
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mehrdad
+    family-names: Zarei
+    email: mehr.zarei1@gmail.com
+    affiliation: Nicolaus Copernicus University
+    orcid: 'https://orcid.org/0000-0002-9541-9829'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10368942
+repository-code: 'https://github.com/mehrdadzarei/AutoRelocking_ECDL_Laser_by_Redpitaya'
+abstract: 
+date-released: 2023-12-13
